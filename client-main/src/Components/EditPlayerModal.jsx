@@ -42,6 +42,7 @@ const formatDate = (dateString) => {
   const [editedPlayer, setEditedPlayer] = useState({
     ...player,
     rating: player.rating || 1,
+    position: player.position?._id || player.position,
     currentClub: {
       club: player.currentClub?.club || null,
       from: formatDate(player.currentClub?.from),
@@ -217,24 +218,24 @@ console.log('Current club ID we are looking for:', editedPlayer.currentClub.club
             <div className="flex flex-col">
               <label className="font-semibold text-gray-700">Position:</label>
               <Select
-                value={
-                  editedPlayer.position
-                    ? {
-                        value: editedPlayer.position,
-                        label: positionsData?.find((p) => p.position)?.position,
-                      }
-                    : null
-                }
-                onChange={(option) =>
-                  handleInputChange("position", option.value)
-                }
-                options={
-                  positionsData?.map((p) => ({
-                    value: p.position,
-                    label: p.position,
-                  })) || []
-                }
-              />
+  value={
+    editedPlayer.position
+      ? {
+          value: editedPlayer.position,
+          label: positionsData?.find((p) => p._id === editedPlayer.position)?.position,
+        }
+      : null
+  }
+  onChange={(option) =>
+    handleInputChange("position", option.value)
+  }
+  options={
+    positionsData?.map((p) => ({
+      value: p._id,  // Use the position ID as value
+      label: p.position  // Use the position name as label
+    })) || []
+  }
+/>
             </div>
           </div>
          

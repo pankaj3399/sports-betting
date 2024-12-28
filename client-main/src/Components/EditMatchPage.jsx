@@ -478,37 +478,6 @@ const EditMatchPage = () => {
         });
         return;
       }
-
-      // Check both teams for existing matches on the selected date
-      const [homeTeamCheck, awayTeamCheck] = await Promise.all([
-        checkExistingMatches(
-          matchData.homeTeam.team._id,
-          matchData.date,
-          matchType
-        ),
-        checkExistingMatches(
-          matchData.awayTeam.team._id,
-          matchData.date,
-          matchType
-        ),
-      ]);
-
-      if (homeTeamCheck.hasMatch) {
-        toast({
-          variant: "destructive",
-          description: `${homeTeamCheck.teamName} already has a match on this date.`,
-        });
-        return;
-      }
-
-      if (awayTeamCheck.hasMatch) {
-        toast({
-          variant: "destructive",
-          description: `${awayTeamCheck.teamName} already has a match on this date.`,
-        });
-        return;
-      }
-
       await updateMatchMutation.mutateAsync({
         ...matchData,
         rating: {

@@ -126,7 +126,7 @@ module.exports = {
             console.log('Update request received for player:', playerId);
             console.log('Raw request body:', req.body);
             console.log('Extracted otherData:', otherData);
-    
+            console.log('Position being updated to:', otherData.position);
             let updateData = {
                 ...otherData,
                 dateOfBirth: new Date(otherData.dateOfBirth),
