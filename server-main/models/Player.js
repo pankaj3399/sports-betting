@@ -25,8 +25,6 @@ const RatingHistorySchema = new mongoose.Schema({
     matchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' }
 });
 
-
-
 const PlayerSchema = new mongoose.Schema({
     name: { type: String, required: true },
     dateOfBirth: { type: Date, required: true },
@@ -39,5 +37,11 @@ const PlayerSchema = new mongoose.Schema({
     previousClubs: [PreviousClubSchema],
     ratingHistory: [RatingHistorySchema]
 });
-
+PlayerSchema.index({ name: 1, dateOfBirth: 1 }, { unique: true });
+PlayerSchema.pre('save', function(next) {
+    if (this.name) {
+        this.name = this.name.trim();
+    }
+    next();
+});
 module.exports = mongoose.model('Player', PlayerSchema);
