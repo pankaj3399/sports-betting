@@ -53,7 +53,7 @@ const formatDate = (dateString) => {
       type: team.type || '',
       to: formatDate(team.to),
       teams: [],
-      disabled: false, // Changed to false since we already have the data
+      disabled: false,
       currentlyPlaying: !team.to
     })) || [{
       name: '',
@@ -74,14 +74,30 @@ const formatDate = (dateString) => {
  // Fetch national teams when a country is selected
  const fetchNationalTeams = async (country, index) => {
   try {
+    console.log('Fetching teams for country:', country);
     const teams = await getNationalTeams(country);
-    const teamsArray = teams.map((team) => team.type);
+    console.log('Received teams:', teams);
+
+    // Make sure we're getting the correct team types
+    const teamsArray = ['U-17', 'U-19', 'U-21', 'A'];  // Use the fixed array of team types
+
     const updatedTeams = [...editedPlayer.nationalTeams];
-    updatedTeams[index].teams = teamsArray;
-    updatedTeams[index].disabled = false;
-    setEditedPlayer({ ...editedPlayer, nationalTeams: updatedTeams });
+    updatedTeams[index] = {
+      ...updatedTeams[index],
+      teams: teamsArray,  // Set the available team types
+      disabled: false
+    };
+
+    setEditedPlayer(prevState => ({
+      ...prevState,
+      nationalTeams: updatedTeams
+    }));
   } catch (error) {
     console.error('Error fetching national teams:', error);
+    toast({
+      variant: "destructive",
+      description: "Failed to fetch national teams",
+    });
   }
 };
 
@@ -111,6 +127,8 @@ useEffect(() => {
   };
 
   const handleNationalTeamChange = (index, field, value) => {
+    console.log('Handling national team change:', { index, field, value });
+  
     const updatedTeams = [...editedPlayer.nationalTeams];
     
     if (field === "name") {
@@ -118,20 +136,27 @@ useEffect(() => {
         ...updatedTeams[index],
         [field]: value,
         type: '', // Reset type when country changes
-        teams: [], // Reset teams array
-        disabled: true
+        teams: ['U-17', 'U-19', 'U-21', 'A'], // Set available team types
+        disabled: false, // Enable type selection
+        from: updatedTeams[index].from || new Date().toISOString().split('T')[0]
       };
+      
       // Update selected countries state
       const newSelectedCountries = [...selectedCountries];
       newSelectedCountries[index] = { value, label: value };
       setSelectedCountries(newSelectedCountries);
-      // Fetch new teams for the selected country
-      fetchNationalTeams(value, index);
     } else if (field === "currentlyPlaying") {
       updatedTeams[index] = {
         ...updatedTeams[index],
         currentlyPlaying: value,
-        to: value ? '' : updatedTeams[index].to
+        to: value ? null : updatedTeams[index].to
+      };
+    } else if (field === "type") {
+      updatedTeams[index] = {
+        ...updatedTeams[index],
+        [field]: value,
+        from: updatedTeams[index].from || new Date().toISOString().split('T')[0],
+        teams: ['U-17', 'U-19', 'U-21', 'A'] // Ensure team types are available
       };
     } else {
       updatedTeams[index] = {
@@ -139,30 +164,49 @@ useEffect(() => {
         [field]: value
       };
     }
+  
+    console.log('Updated teams:', updatedTeams);
     
-    setEditedPlayer(prev => ({
-      ...prev,
+    setEditedPlayer(prevState => ({
+      ...prevState,
       nationalTeams: updatedTeams
     }));
   };
   const handleAddNationalTeam = () => {
-    setEditedPlayer({
-      ...editedPlayer,
-      nationalTeams: [
-        ...editedPlayer.nationalTeams,
-        {
-          name: "",
-          from: "",
-          to: "",
-          type: "",
-          teams: [],
-          disabled: true,
-          currentlyPlaying: false,
-        },
-      ],
-    });
+    console.log('Adding new national team');
+    
+    const newTeam = {
+      name: "",
+      from: new Date().toISOString().split('T')[0],
+      to: "",
+      type: "",
+      teams: ['U-17', 'U-19', 'U-21', 'A'], // Add available team types
+      disabled: true,
+      currentlyPlaying: false,
+    };
+  
+    setEditedPlayer(prevState => ({
+      ...prevState,
+      nationalTeams: [...prevState.nationalTeams, newTeam]
+    }));
+  
+    // Update selected countries state
+    setSelectedCountries(prev => [...prev, null]);
+    
+    console.log('Updated player after adding team:', editedPlayer);
   };
-
+// When selecting a country
+const handleCountrySelect = (option, index) => {
+  handleNationalTeamChange(index, "name", option.value);
+  // Ensure from date is set
+  if (!editedPlayer.nationalTeams[index].from) {
+    handleNationalTeamChange(
+      index, 
+      "from", 
+      new Date().toISOString().split('T')[0]
+    );
+  }
+};
   const handleAddPreviousClub = () => {
     setEditedPlayer({
       ...editedPlayer,
@@ -176,8 +220,8 @@ useEffect(() => {
     console.log('Player data:', player);
     console.log('Current club data:', player.currentClub);
   }, [player]);
-  console.log('ClubsData available:', clubsData);
-console.log('Current club ID we are looking for:', editedPlayer.currentClub.club);
+  // console.log('ClubsData available:', clubsData);
+// console.log('Current club ID we are looking for:', editedPlayer.currentClub.club);
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -285,29 +329,26 @@ console.log('Current club ID we are looking for:', editedPlayer.currentClub.club
             <div className="space-y-4">
             {editedPlayer.nationalTeams.map((team, index) => (
         <div key={index} className="p-4 border rounded-lg space-y-4">
-          <Select
-            value={selectedCountries[index] || null}
-            onChange={(option) => {
-              handleNationalTeamChange(index, "name", option.value);
-            }}
-            options={countriesData?.map((country) => ({
-              label: typeof country === 'string' ? country : country.country,
-              value: typeof country === 'string' ? country : country.country
-            })) || []}
-            placeholder="Select Country"
-          />
-          
-          <Select
-            value={team.type ? { label: team.type, value: team.type } : null}
-            onChange={(option) => handleNationalTeamChange(index, "type", option.value)}
-            options={team.teams?.map((type) => ({
-              value: type,
-              label: type
-            })) || []}
-            isDisabled={team.disabled}
-            placeholder="Select Team Type"
-          />
-
+             <Select
+        value={selectedCountries[index] || null}
+        onChange={(option) => handleCountrySelect(option, index)} // Changed this line
+        options={countriesData?.map((country) => ({
+          label: typeof country === 'string' ? country : country.country,
+          value: typeof country === 'string' ? country : country.country
+        })) || []}
+        placeholder="Select Country"
+      />
+      
+      <Select
+  value={team.type ? { label: team.type, value: team.type } : null}
+  onChange={(option) => handleNationalTeamChange(index, "type", option.value)}
+  options={['U-17', 'U-19', 'U-21', 'A'].map((type) => ({
+    value: type,
+    label: type
+  }))}
+  isDisabled={!team.name} // Only disable if no country is selected
+  placeholder="Select Team Type"
+/>
           <div className="flex gap-4">
             <Input
               type="date"
