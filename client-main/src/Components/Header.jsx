@@ -9,6 +9,9 @@ const Header = () => {
           <Link to="/" className="mr-4 text-white text-sm sm:text-md cursor-pointer">
             Clubs
           </Link>
+          <Link to="/national-teams" className="mr-4 text-white text-sm sm:text-md cursor-pointer">
+            National Teams
+          </Link>
           <Link to="/addplayer" className="mr-4 text-white text-sm sm:text-md cursor-pointer">
             Add Player
           </Link>

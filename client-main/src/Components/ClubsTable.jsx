@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, TableHead, TableRow, TableBody, TableCell } from "../Components/ui/table";
+import { Table, TableHead, TableRow, TableBody, TableCell, TableHeader } from "../Components/ui/table";
 import { Button } from "../Components/ui/button";
 import { Edit, Trash2, Users } from "lucide-react";
 
@@ -7,12 +7,13 @@ const ClubsTable = ({ data, onViewPlayers, onEdit, onDelete }) => {
   return (
     <div className="overflow-x-auto">
       <Table>
-        <TableHead>
+        <TableHeader>
           <TableRow>
-            <TableCell className="font-semibold p-3">Club Name</TableCell>
-            <TableCell className="font-semibold p-3">Actions</TableCell>
+            <TableHead className="font-semibold p-3">Club Name</TableHead>
+            <TableHead className="font-semibold p-3">Actions</TableHead>
+            <TableHead className="font-semibold p-3">Rating</TableHead>
           </TableRow>
-        </TableHead>
+        </TableHeader>
         <TableBody>
           {data?.clubs?.map((club) => (
             <TableRow key={club._id}>
@@ -49,6 +50,9 @@ const ClubsTable = ({ data, onViewPlayers, onEdit, onDelete }) => {
                     </div>
                   </Button>
                 </div>
+              </TableCell>
+              <TableCell>
+                {club.rating}
               </TableCell>
             </TableRow>
           ))}

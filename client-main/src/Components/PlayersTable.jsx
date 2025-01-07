@@ -10,7 +10,7 @@ import {
 import { Button } from "../Components/ui/button";
 import { Edit } from "lucide-react";
 
-const PlayersTable = ({ players, onEdit }) => {
+const PlayersTable = ({ players, onEdit, isClub = true }) => {
   const [expandedRows, setExpandedRows] = useState({});
 
   const calculateRating = ({ player }) => {
@@ -95,7 +95,7 @@ const PlayersTable = ({ players, onEdit }) => {
           ) : (
             <TableRow>
               <TableCell colSpan={6} className="h-24 text-center text-gray-500">
-                No players found for this club
+                No players found for this {isClub ? "club" : "national team"}
               </TableCell>
             </TableRow>
           )}
