@@ -32,83 +32,102 @@ module.exports = {
         limit = 10,
         sortBy = "country",
         sortOrder = "asc",
-        search,
+        search = "",
       } = req.query;
-
+  
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(limit, 10);
-
+  
       if (pageNum <= 0 || limitNum <= 0) {
         return res
           .status(400)
           .json({ message: "Page and limit must be positive integers." });
       }
-
-      const options = {
-        page: parseInt(page, 10) || 1,
-        limit: parseInt(limitNum, 10) || 10,
-        search: search || "",
-      };
-
+  
       const sortOptions = {};
-      sortOptions[sortBy] = sortOrder;
-
-      const nationalTeams = await NationalTeam.find({
-        country: { $regex: options.search, $options: "i" },
-      })
-        .sort(sortOptions)
-        .select("country type _id")
-        .lean();
-
-      const totalTeams = await NationalTeam.countDocuments();
-
-      const teamsWithRatings = await Promise.all(
-        nationalTeams.map(async (team) => {
-          const players = await Player.find({
-            nationalTeams: {
-              $elemMatch: {
-                name: team.country,
-                type: team.type,
+      sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
+  
+      const pipeline = [
+        {
+          $match: {
+            country: { $regex: search, $options: "i" },
+          },
+        },
+        {
+          $lookup: {
+            from: "players",
+            let: { country: "$country", type: "$type" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $in: ["$$country", "$nationalTeams.name"] },
+                      { $in: ["$$type", "$nationalTeams.type"] },
+                    ],
+                  },
+                },
               },
-            },
-          }).select("ratingHistory");
-
-          const totalRating = players.reduce((sum, player) => {
-            const playerTotalRating = Array.isArray(player.ratingHistory)
-              ? player.ratingHistory.reduce(
-                  (a, currRating) => a + currRating.newRating,
-                  0
-                )
-              : 0;
-            return sum + playerTotalRating;
-          }, 0);
-
-          return {
-            ...team,
-            rating: totalRating,
-          };
-        })
-      );
-
-      const sortedTeams =
-        sortBy === "rating"
-          ? teamsWithRatings.sort((a, b) =>
-              sortOrder === "asc" ? a.rating - b.rating : b.rating - a.rating
-            )
-          : teamsWithRatings;
-
-      const paginatedTeams = sortedTeams.slice(
-        (options.page - 1) * options.limit,
-        options.page * options.limit
-      );
-
+              {
+                $project: {
+                  totalRating: {
+                    $sum: "$ratingHistory.newRating",
+                  },
+                },
+              },
+            ],
+            as: "players",
+          },
+        },
+        {
+          $addFields: {
+            rating: { $sum: "$players.totalRating" },
+          },
+        },
+        {
+          $project: {
+            country: 1,
+            type: 1,
+            _id: 1,
+            rating: 1,
+          },
+        },
+        {
+          $sort: sortOptions,
+        },
+        {
+          $skip: (pageNum - 1) * limitNum,
+        },
+        {
+          $limit: limitNum,
+        },
+      ];
+  
+      const totalTeamsPipeline = [
+        {
+          $match: {
+            country: { $regex: search, $options: "i" },
+          },
+        },
+        {
+          $count: "totalTeams",
+        },
+      ];
+  
+      const [teams, totalTeamsResult] = await Promise.all([
+        NationalTeam.aggregate(pipeline),
+        NationalTeam.aggregate(totalTeamsPipeline),
+      ]);
+  
+      const totalTeams = totalTeamsResult[0]?.totalTeams || 0;
+  
       const response = {
         totalTeams,
         totalPages: Math.ceil(totalTeams / limitNum),
         currentPage: pageNum,
-        teams: paginatedTeams,
+        teams,
       };
-
+  
       return res.status(200).json(response);
     } catch (error) {
       return res.status(400).json({
@@ -117,6 +136,7 @@ module.exports = {
       });
     }
   },
+  
   async getNationalTeamPlayers(req, res) {
     try {
       const { teamId } = req.params;

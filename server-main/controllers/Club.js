@@ -20,91 +20,114 @@ module.exports = {
       return res.status(400).send(error);
     }
   },
-  // fetch all clubs
   async fetchAll(req, res) {
     try {
       const {
-        page,
-        perPage,
-        search,
+        page = 1,
+        perPage = 10,
+        search = "",
         sortBy = "name",
         sortOrder = "asc",
       } = req.query;
   
-      const options = {
-        page: parseInt(page, 10) || 1,
-        limit: parseInt(perPage, 10) || 10,
-        search: search || "",
-      };
-
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(perPage, 10);
+  
+      if (pageNum <= 0 || limitNum <= 0) {
+        return res
+          .status(400)
+          .json({ message: "Page and perPage must be positive integers." });
+      }
+  
       const sortOptions = {};
-      sortOptions[sortBy] = sortOrder;
+      sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
   
-      // Fetch all matching clubs without pagination
-      const allClubs = await Club.find({
-        name: { $regex: options.search, $options: "i" },
-      }).sort(sortOptions).lean();
-  
-      // Calculate total number of clubs
-      const total = allClubs.length;
-  
-      // Add ratings for each club
-      const clubsWithRatings = await Promise.all(
-        allClubs.map(async (club) => {
-          const players = await Player.find({
-            $or: [
-              { "currentClub.club": club._id },
+      const pipeline = [
+        {
+          $match: {
+            name: { $regex: search, $options: "i" },
+          },
+        },
+        {
+          $lookup: {
+            from: "players",
+            let: { clubId: "$_id" },
+            pipeline: [
               {
-                previousClubs: {
-                  $elemMatch: { name: club._id },
+                $match: {
+                  $expr: {
+                    $or: [
+                      { $eq: ["$currentClub.club", "$$clubId"] },
+                      { $in: ["$$clubId", "$previousClubs.name"] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: {
+                  totalRating: {
+                    $sum: "$ratingHistory.newRating",
+                  },
                 },
               },
             ],
-          }).select("ratingHistory");
+            as: "players",
+          },
+        },
+        {
+          $addFields: {
+            rating: { $sum: "$players.totalRating" },
+          },
+        },
+        {
+          $project: {
+            name: 1,
+            _id: 1,
+            rating: 1,
+          },
+        },
+        {
+          $sort: sortOptions,
+        },
+        {
+          $skip: (pageNum - 1) * limitNum,
+        },
+        {
+          $limit: limitNum,
+        },
+      ];
   
-          const totalRating = players.reduce((sum, player) => {
-            const playerTotalRating = Array.isArray(player.ratingHistory)
-              ? player.ratingHistory.reduce(
-                  (a, currRating) => a + currRating.newRating,
-                  0
-                )
-              : 0;
-            return sum + playerTotalRating;
-          }, 0);
+      const totalPipeline = [
+        {
+          $match: {
+            name: { $regex: search, $options: "i" },
+          },
+        },
+        {
+          $count: "total",
+        },
+      ];
   
-          return {
-            ...club,
-            rating: totalRating,
-          };
-        })
-      );
+      const [clubs, totalResult] = await Promise.all([
+        Club.aggregate(pipeline),
+        Club.aggregate(totalPipeline),
+      ]);
   
-      // Sort clubs
-      const sortedClubs =
-        sortBy === "rating"
-          ? clubsWithRatings.sort((a, b) =>
-              sortOrder === "asc" ? a.rating - b.rating : b.rating - a.rating
-            )
-          : clubsWithRatings;
-  
-      // Apply pagination after sorting
-      const paginatedClubs = sortedClubs.slice(
-        (options.page - 1) * options.limit,
-        options.page * options.limit
-      );
+      const total = totalResult[0]?.total || 0;
   
       return res.status(200).json({
-        clubs: paginatedClubs,
+        clubs,
         total,
-        page: options.page,
-        perPage: options.limit,
+        page: pageNum,
+        perPage: limitNum,
       });
     } catch (error) {
       return res
         .status(400)
         .json({ message: "Error fetching clubs", error: error.message });
     }
-  },
+  }
+,  
   async fetchAllActive(req, res) {
     try {
       const clubs = await Club.find({ status: "Active" }).sort("name");
