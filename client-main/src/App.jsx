@@ -8,6 +8,8 @@ import PlayersPage from './Components/PlayersPage';
 import AddMatch from './Components/AddMatch';
 import EditMatchPage from './Components/EditMatchPage';
 import PredictMatchPage from './Components/PredictMatchPage';
+import NationalTeamsPage from './Components/NationalTeamsPage';
+import NationalTeamPlayersPage from './Components/NationalTeamPlayersPage';
 
 function App() {
   return (
@@ -16,9 +18,11 @@ function App() {
         <Header />
         <Routes>
           <Route path='/' element={<Home/>} />
+          <Route path='/national-teams' element={<NationalTeamsPage/>} />
           <Route path='/addplayer' element={<AddPlayer/>} />
           <Route path='/matches' element={<Matches/>} />
-          <Route path='/clubs/:clubId/players' element={<PlayersPage/>} /> 
+          <Route path='/clubs/:clubId/players' element={<PlayersPage/>} />
+          <Route path='/national-teams/:teamId/players' element={<NationalTeamPlayersPage/>} /> 
           <Route path='/matches/add' element={<AddMatch/>} />
           <Route path='/match/edit/:matchId' element={<EditMatchPage />} />
           <Route path='/predict-match' element={<PredictMatchPage />} />

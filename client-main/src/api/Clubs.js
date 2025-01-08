@@ -1,7 +1,7 @@
 import axios from '../utils/axiosConfig';
 
-export const getClubs = async ({page, search}) => {
-    const { data } = await axios.get(`/club?page=${page}&search=${search}`);
+export const getClubs = async ({page, search, sortBy,sortOrder}) => {
+    const { data } = await axios.get(`/club?page=${page}&search=${search}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
     return data;
 }   
 

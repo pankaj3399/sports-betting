@@ -1382,60 +1382,60 @@ const seedDatabase = async () => {
       NationalTeam.deleteMany({}),
       Club.deleteMany({}),
       Position.deleteMany({}),
-      Match.deleteMany({})
+      Match.deleteMany({}),
     ]);
 
     // Create positions first and store them in a map for easy access
     const positionMap = new Map();
     const positionDocs = await Position.insertMany(
-      positions.map(position => ({ position }))
+      positions.map((position) => ({ position }))
     );
-    positionDocs.forEach(doc => {
+    positionDocs.forEach((doc) => {
       positionMap.set(doc.position, doc._id);
     });
 
     // Create countries and store in map
     const countryMap = new Map();
     const countryDocs = await Country.insertMany(
-      countries.map(country => ({
+      countries.map((country) => ({
         country,
-        status: "Active"
+        status: "Active",
       }))
     );
-    countryDocs.forEach(doc => {
+    countryDocs.forEach((doc) => {
       countryMap.set(doc.country, doc._id);
     });
 
     // Create clubs and store in map
     const clubMap = new Map();
     const clubDocs = await Club.insertMany(
-      clubs.map(club => ({
+      clubs.map((club) => ({
         name: club,
-        status: "Active"
+        status: "Active",
       }))
     );
-    clubDocs.forEach(doc => {
+    clubDocs.forEach((doc) => {
       clubMap.set(doc.name, doc._id);
     });
 
     // Create national teams with proper country references
     const nationalTeamMap = new Map();
     const nationalTeamData = [];
-    
-    nationalTeams.forEach(teamObj => {
+
+    nationalTeams.forEach((teamObj) => {
       const country = Object.keys(teamObj)[0];
       const types = teamObj[country];
-      types.forEach(type => {
+      types.forEach((type) => {
         nationalTeamData.push({
           country,
           type,
-          status: "Active"
+          status: "Active",
         });
       });
     });
 
     const nationalTeamDocs = await NationalTeam.insertMany(nationalTeamData);
-    nationalTeamDocs.forEach(doc => {
+    nationalTeamDocs.forEach((doc) => {
       const key = `${doc.country}-${doc.type}`;
       nationalTeamMap.set(key, doc._id);
     });
@@ -1451,50 +1451,73 @@ const seedDatabase = async () => {
     // Helper function to get random national teams for a country
     const getRandomNationalTeams = (country) => {
       const teamTypes = ["A", "U-21", "U-19", "U-17"];
-      const selectedTypes = teamTypes.slice(0, 1 + Math.floor(Math.random() * 2));
-      return selectedTypes.map(type => ({
+      const selectedTypes = teamTypes.slice(
+        0,
+        1 + Math.floor(Math.random() * 2)
+      );
+      return selectedTypes.map((type) => ({
         name: country,
         type,
         from: new Date("2023-01-01"),
-        to: null
+        to: null,
       }));
     };
-
-    // Create players for multiple clubs
     const playerData = [];
-    const clubsToPopulate = clubDocs.slice(0, 5); // Take first 5 clubs for example
-
+    const clubsToPopulate = clubDocs.slice(0, 5);
     clubsToPopulate.forEach((club, clubIndex) => {
-      const countryForClub = countryDocs[clubIndex]; // Use different country for each club
-
-      // Create 12 players for each club
+      const countryForClub = countryDocs[clubIndex];
       for (let i = 0; i < 12; i++) {
         const playerIndex = clubIndex * 12 + i;
         playerData.push({
-          name: `${firstNames[playerIndex % firstNames.length]} ${lastNames[playerIndex % lastNames.length]}`,
+          name: `${firstNames[playerIndex % firstNames.length]} ${
+            lastNames[playerIndex % lastNames.length]
+          }`,
           dateOfBirth: generateDOB(),
           position: getPositionId(i),
-          currentClub: {
-            club: club._id,
-            from: new Date("2023-07-01")
-          },
+          currentClub: { club: club._id, from: new Date("2023-07-01") },
           country: countryForClub._id,
           nationalTeams: getRandomNationalTeams(countryForClub.country),
           previousClubs: [],
-          ratingHistory: [{
-            date: new Date("2023-07-01"),
-            newRating: 3,
-            type: 'manual',
-            matchId: null
-          }]
+          ratingHistory: [
+            { date: new Date("2023-07-01"), newRating: 3, type: "manual" },
+          ],
         });
       }
     });
 
     const savedPlayers = await Player.insertMany(playerData);
 
+    // Add players to Real Madrid
+    const realMadridClub = clubDocs.find((club) => club.name === "Real Madrid");
+    if (realMadridClub) {
+      const countryForRealMadrid = countryDocs.find(
+        (country) => country === realMadridClub.country
+      );
+      const realMadridPlayers = [];
+      for (let i = 0; i < 12; i++) {
+        realMadridPlayers.push({
+          name: `${firstNames[i % firstNames.length]} ${
+            lastNames[i % lastNames.length]
+          }`,
+          dateOfBirth: generateDOB(),
+          position: getPositionId(i),
+          currentClub: { club: realMadridClub._id, from: new Date("2023-07-01") },
+          country: countryDocs[i]._id,
+          nationalTeams: getRandomNationalTeams(),
+          previousClubs: [],
+          ratingHistory: [
+            { date: new Date("2023-07-01"), newRating: Math.floor(Math.random() * 20), type: "manual" },
+          ],
+        });
+      }
+      const savedRealMadridPlayers = await Player.insertMany(realMadridPlayers);
+      console.log(
+        `Added ${savedRealMadridPlayers.length} players to Real Madrid.`
+      );
+    }
+
     // Log summary
-    console.log('\nDatabase seeded successfully with:');
+    console.log("\nDatabase seeded successfully with:");
     console.log(`Countries: ${countryDocs.length}`);
     console.log(`Clubs: ${clubDocs.length}`);
     console.log(`Positions: ${positionDocs.length}`);
@@ -1505,82 +1528,84 @@ const seedDatabase = async () => {
     console.log("\nSample Player Details:");
     const playerDetails = await Player.find()
       .limit(5)
-      .populate('currentClub.club')
-      .populate('position')
-      .populate('country');
+      .populate("currentClub.club")
+      .populate("position")
+      .populate("country");
 
-    playerDetails.forEach(player => {
+    playerDetails.forEach((player) => {
       console.log(`\nPlayer: ${player.name}`);
       console.log(`Club: ${player.currentClub.club.name}`);
       console.log(`Position: ${player.position.position}`);
       console.log(`Country: ${player.country.country}`);
-      console.log('National Teams:', player.nationalTeams);
+      console.log("National Teams:", player.nationalTeams);
     });
 
-     const players = await Player.find();
-     const allClubs = await Club.find();
- 
-     const matches = [
-       {
-         type: "ClubTeam",
-         date: new Date("2023-12-15"),
-         venue: "Stadium A",
-         odds: { homeWin: 0.5, draw: 0.3, awayWin: 0.2 },
-         homeTeam: {
-           team: allClubs[1]._id,
-           score: 2,
-           players: players.slice(13, 17).map(player => ({
-             player: player._id,
-             starter: true,
-           })),
-         },
-         awayTeam: {
-           team: allClubs[0]._id,
-           score: 1,
-           players: players.slice(4, 9).map(player => ({
-             player: player._id,
-             starter: true,
-           })),
-         },
-         rating: {
-           homeTeamRating: 4.5,
-           awayTeamRating: 4.2,
-         },
-       },
-       {
-         type: "ClubTeam",
-         date: new Date("2023-11-10"),
-         venue: "National Arena",
-         odds: { homeWin: 0.4, draw: 0.4, awayWin: 0.2 },
-         homeTeam: {
-           team: allClubs[0]._id,
-           score: 3,
-           players: players.slice(0, 6).map(player => ({
-             player: player._id,
-             starter: true,
-           })),
-         },
-         awayTeam: {
-           team: allClubs[1]._id,
-           score: 3,
-           players: players.slice(16, 20).map(player => ({
-             player: player._id,
-             starter: true,
-           })),
-         },
-         rating: {
-           homeTeamRating: 4.8,
-           awayTeamRating: 4.9,
-         },
-       },
-     ];
- 
-     const savedMatches = await Match.insertMany(matches);
- 
-     console.log(`\nMatches seeded successfully: ${savedMatches.length}`);
-     savedMatches.forEach(match => {
-       console.log(`Match ID: ${match._id}, Venue: ${match.venue}, Date: ${match.date}`);
-     });
+    const players = await Player.find();
+    const allClubs = await Club.find();
+
+    const matches = [
+      {
+        type: "ClubTeam",
+        date: new Date("2023-12-15"),
+        venue: "Stadium A",
+        odds: { homeWin: 0.5, draw: 0.3, awayWin: 0.2 },
+        homeTeam: {
+          team: allClubs[1]._id,
+          score: 2,
+          players: players.slice(13, 17).map((player) => ({
+            player: player._id,
+            starter: true,
+          })),
+        },
+        awayTeam: {
+          team: allClubs[0]._id,
+          score: 1,
+          players: players.slice(4, 9).map((player) => ({
+            player: player._id,
+            starter: true,
+          })),
+        },
+        rating: {
+          homeTeamRating: 4.5,
+          awayTeamRating: 4.2,
+        },
+      },
+      {
+        type: "ClubTeam",
+        date: new Date("2023-11-10"),
+        venue: "National Arena",
+        odds: { homeWin: 0.4, draw: 0.4, awayWin: 0.2 },
+        homeTeam: {
+          team: allClubs[0]._id,
+          score: 3,
+          players: players.slice(0, 6).map((player) => ({
+            player: player._id,
+            starter: true,
+          })),
+        },
+        awayTeam: {
+          team: allClubs[1]._id,
+          score: 3,
+          players: players.slice(16, 20).map((player) => ({
+            player: player._id,
+            starter: true,
+          })),
+        },
+        rating: {
+          homeTeamRating: 4.8,
+          awayTeamRating: 4.9,
+        },
+      },
+    ];
+
+    const savedMatches = await Match.insertMany(matches);
+
+    console.log(`\nMatches seeded successfully: ${savedMatches.length}`);
+    savedMatches.forEach((match) => {
+      console.log(
+        `Match ID: ${match._id}, Venue: ${match.venue}, Date: ${match.date}`
+      );
+    });
 
     await mongoose.connection.close();
   } catch (error) {
