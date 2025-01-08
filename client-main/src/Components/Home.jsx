@@ -215,50 +215,6 @@ const Home = () => {
         </Button>
       </div>
 
-      <div className="flex gap-4 p-4">
-        <div className="h-40 w-56 mx-3 mt-5 p-5 border border-slate-300 rounded-lg shadow-sm bg-white">
-          <h2 className="text-lg font-semibold text-slate-700 mb-4">Sort By</h2>
-          <div className="flex items-center gap-2 mb-2">
-            <input
-              type="radio"
-              name="sortBy"
-              id="sortByName"
-              className="form-radio text-blue-600 focus:ring-blue-500"
-              checked={sortBy === "name"}
-              onChange={(e) => setSortBy("name")}
-            />
-            <label htmlFor="sortByName" className="text-slate-600">
-              Name
-            </label>
-          </div>
-          <div className="flex items-center gap-2 mb-2">
-            <input
-              type="radio"
-              name="sortBy"
-              id="sortByRating"
-              className="form-radio text-blue-600 focus:ring-blue-500"
-              checked={sortBy === "rating"}
-              onChange={(e) => setSortBy("rating")}
-            />
-            <label htmlFor="sortByRating" className="text-slate-600">
-              Rating
-            </label>
-          </div>
-          <div className="flex items-center gap-2 mt-4">
-            <label htmlFor="sortOrder" className="text-slate-600">
-              Order:
-            </label>
-            <select
-              id="sortOrder"
-              className="border border-slate-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value)}
-            >
-              <option value="asc">Ascending</option>
-              <option value="desc">Descending</option>
-            </select>
-          </div>
-        </div>
         <div className="w-full mt-4">
           {isLoading ? (
             <Loader className="pb-10" />
@@ -275,10 +231,12 @@ const Home = () => {
                 setSelectedClubId(clubId);
                 setShowDeleteModal(true);
               }}
+              setSortBy={setSortBy}
+              sortOrder={sortOrder}
+              setSortOrder={setSortOrder}
             />
           )}
         </div>
-      </div>
 
       <div className="flex flex-row gap-5 justify-center mt-5">
         <Button onClick={() => setPage(page - 1)} disabled={page === 1}>

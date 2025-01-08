@@ -1,17 +1,76 @@
-import React from 'react';
-import { Table, TableHead, TableRow, TableBody, TableCell, TableHeader } from "../Components/ui/table";
+import React from "react";
+import {
+  Table,
+  TableHead,
+  TableRow,
+  TableBody,
+  TableCell,
+  TableHeader,
+} from "../Components/ui/table";
 import { Button } from "../Components/ui/button";
-import { Edit, Trash2, Users } from "lucide-react";
+import {
+  Edit,
+  LucideSortAsc,
+  LucideSortDesc,
+  Trash2,
+  Users,
+} from "lucide-react";
 
-const ClubsTable = ({ data, onViewPlayers, onEdit, onDelete }) => {
+const ClubsTable = ({
+  data,
+  onViewPlayers,
+  onEdit,
+  onDelete,
+  sortOrder,
+  setSortBy,
+  setSortOrder,
+}) => {
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="font-semibold p-3">Club Name</TableHead>
+            <TableHead className="p-3 flex items-center gap-1.5">
+              <span className="font-semibold">Club Name</span>
+              <span className="cursor-pointer">
+                {sortOrder === "asc" ? (
+                  <LucideSortDesc
+                    onClick={() => {
+                      setSortBy("name");
+                      setSortOrder("desc");
+                    }}
+                  />
+                ) : (
+                  <LucideSortAsc
+                    onClick={() => {
+                      setSortBy("name");
+                      setSortOrder("asc");
+                    }}
+                  />
+                )}
+              </span>
+            </TableHead>
             <TableHead className="font-semibold p-3">Actions</TableHead>
-            <TableHead className="font-semibold p-3">Rating</TableHead>
+            <TableHead className="flex items-center gap-1.5 p-3">
+              <span className="font-semibold">Rating</span>
+              <span className="cursor-pointer">
+                {sortOrder === "asc" ? (
+                  <LucideSortDesc
+                    onClick={() => {
+                      setSortBy("rating");
+                      setSortOrder("desc");
+                    }}
+                  />
+                ) : (
+                  <LucideSortAsc
+                    onClick={() => {
+                      setSortBy("rating");
+                      setSortOrder("asc");
+                    }}
+                  />
+                )}
+              </span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -40,10 +99,7 @@ const ClubsTable = ({ data, onViewPlayers, onEdit, onDelete }) => {
                       <Edit size={16} />
                     </div>
                   </Button>
-                  <Button
-                    onClick={() => onDelete(club._id)}
-                    variant="red"
-                  >
+                  <Button onClick={() => onDelete(club._id)} variant="red">
                     <div className="flex flex-row gap-2 items-center">
                       <p>Delete</p>
                       <Trash2 size={16} color="red" />
@@ -51,9 +107,7 @@ const ClubsTable = ({ data, onViewPlayers, onEdit, onDelete }) => {
                   </Button>
                 </div>
               </TableCell>
-              <TableCell>
-                {club.rating}
-              </TableCell>
+              <TableCell>{club.rating}</TableCell>
             </TableRow>
           ))}
         </TableBody>

@@ -8,18 +8,56 @@ import {
   TableHeader,
 } from "../Components/ui/table";
 import { Button } from "../Components/ui/button";
-import {  Users } from "lucide-react";
+import {  LucideSortAsc, LucideSortDesc, Users } from "lucide-react";
 
-const NationalTeamsTable = ({ data, onViewPlayers }) => {
+const NationalTeamsTable = ({ data, onViewPlayers, sortOrder, setSortOrder, setSortBy }) => {
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="font-semibold p-3">National Team</TableHead>
+            <TableHead className="p-3 flex items-center gap-1.5">
+              <span className="font-semibold">National Team</span>
+              <span className="cursor-pointer">
+                {sortOrder === "asc" ? (
+                  <LucideSortDesc
+                    onClick={() => {
+                      setSortBy("country");
+                      setSortOrder("desc");
+                    }}
+                  />
+                ) : (
+                  <LucideSortAsc
+                    onClick={() => {
+                      setSortBy("country");
+                      setSortOrder("asc");
+                    }}
+                  />
+                )}
+              </span>
+            </TableHead>
             <TableHead className="font-semibold p-3">Type</TableHead> 
             <TableHead className="font-semibold p-3">Actions</TableHead>
-            <TableHead className="font-semibold p-3">Rating</TableHead>
+            <TableHead className="flex items-center gap-1.5 p-3">
+            <span className="font-semibold">Rating</span>
+              <span className="cursor-pointer">
+                {sortOrder === "asc" ? (
+                  <LucideSortDesc
+                    onClick={() => {
+                      setSortBy("rating");
+                      setSortOrder("desc");
+                    }}
+                  />
+                ) : (
+                  <LucideSortAsc
+                    onClick={() => {
+                      setSortBy("rating");
+                      setSortOrder("asc");
+                    }}
+                  />
+                )}
+              </span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
