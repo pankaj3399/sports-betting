@@ -259,6 +259,7 @@ router.put("/edit-match/:matchId", async (req, res) => {
       type: req.body.type,
       date: matchDate,
       venue: req.body.venue,
+      league : req.body.league,
       rating: {
         homeTeamRating: req.body.rating.homeTeamRating,
         awayTeamRating: req.body.rating.awayTeamRating,
@@ -526,6 +527,7 @@ router.post("/matches", async (req, res) => {
         awayTeamRating: req.body.rating.awayTeamRating,
       },
       venue: req.body.venue.trim(),
+      league : req.body.league.trim(),
       homeTeam: {
         team: req.body.homeTeam.team,
         score: req.body.homeTeam.score,

@@ -249,7 +249,6 @@ const firstNames = [
   "Timothy",
   "Ronald",
 ];
-
 const lastNames = [
   "Smith",
   "Johnson",

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { useToast } from "../hooks/use-toast";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getActiveClubs } from "../api/Clubs";
 import { getCountries } from "../api/Country";
 import { Card, CardContent, CardTitle } from "./ui/card";
@@ -31,6 +31,7 @@ const PredictMatchPage = () => {
     type: "ClubTeam",
     date: "",
     venue: "",
+    league: "",
     rating: {
       homeTeamRating: 0,
       awayTeamRating: 0,
@@ -233,53 +234,52 @@ const PredictMatchPage = () => {
   };
 
   async function findMaxTeamPlayersMatches(matchData, teamId) {
-  try {
-    // Selected team players
-    const teamPlayers =
-      matchData.awayTeam.team === teamId
-        ? matchData.awayTeam.players.map((p) => p._id)
-        : matchData.homeTeam.players.map((p) => p._id);
+    try {
+      // Selected team players
+      const teamPlayers =
+        matchData.awayTeam.team === teamId
+          ? matchData.awayTeam.players.map((p) => p._id)
+          : matchData.homeTeam.players.map((p) => p._id);
 
-    // Fetch matches for the given team
-    const matches = await getMatchesByTeam({ teamId });
+      // Fetch matches for the given team
+      const matches = await getMatchesByTeam({ teamId });
 
-    console.log('Fetched Matches:', matches);
+      console.log("Fetched Matches:", matches);
 
-    const matchPlayerCounts = matches.map((match) => {
-      const playersInMatch =
-        match.homeTeam.team === teamId
-          ? match.homeTeam.players.map((p) => p._id)
-          : match.awayTeam.players.map((p) => p._id);
+      const matchPlayerCounts = matches.map((match) => {
+        const playersInMatch =
+          match.homeTeam.team === teamId
+            ? match.homeTeam.players.map((p) => p._id)
+            : match.awayTeam.players.map((p) => p._id);
 
-      const playerCount = playersInMatch.filter((playerId) =>
-        teamPlayers.includes(playerId)
-      ).length;
+        const playerCount = playersInMatch.filter((playerId) =>
+          teamPlayers.includes(playerId)
+        ).length;
 
-      return { match, playerCount };
-    });
+        return { match, playerCount };
+      });
 
-    const maxPlayerCount = Math.max(
-      0,
-      ...matchPlayerCounts.map((entry) => entry.playerCount) 
-    );
+      const maxPlayerCount = Math.max(
+        0,
+        ...matchPlayerCounts.map((entry) => entry.playerCount)
+      );
 
-    // Get matches with the maximum player count
-    const maxMatches = matchPlayerCounts
-      .filter((entry) => entry.playerCount === maxPlayerCount)
-      .map((entry) => entry.match);
+      // Get matches with the maximum player count
+      const maxMatches = matchPlayerCounts
+        .filter((entry) => entry.playerCount === maxPlayerCount)
+        .map((entry) => entry.match);
 
-    return { maxMatches, maxPlayerCount };
-  } catch (error) {
-    console.error('Error finding max team player matches:', error);
-    throw error;
+      return { maxMatches, maxPlayerCount };
+    } catch (error) {
+      console.error("Error finding max team player matches:", error);
+      throw error;
+    }
   }
-}
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsPredicted(true);
-    
+
     const homeTeamMatches = await findMaxTeamPlayersMatches(
       matchData,
       matchData.homeTeam.team
@@ -298,7 +298,7 @@ const PredictMatchPage = () => {
         0
       )
     );
-    
+
     setAwayTeamRating(
       awayTeamMatches.maxMatches.reduce(
         (acc, match) =>
@@ -372,6 +372,20 @@ const PredictMatchPage = () => {
                     required
                   />
                 </div>
+              </div>
+              <div className="w-72">
+                <label className="block mb-1">League</label>
+                <Input
+                  type="text"
+                  value={matchData.league}
+                  onChange={(e) =>
+                    setMatchData((prev) => ({
+                      ...prev,
+                      league: e.target.value,
+                    }))
+                  }
+                  required
+                />
               </div>
             </div>
           </CardContent>
@@ -509,11 +523,19 @@ const PredictMatchPage = () => {
             </div>
             <div className="flex items-center gap-3 my-2">
               <Label>Home Team Rating:</Label>
-              <Input value={homeTeamRating.toFixed(2)} disabled className="font-bold text-black" />
+              <Input
+                value={homeTeamRating.toFixed(2)}
+                disabled
+                className="font-bold text-black"
+              />
             </div>
             <div className="flex items-center gap-3 my-2">
               <Label>Away Team Rating:</Label>
-              <Input value={awayTeamRating.toFixed(2)} disabled className="font-bold text-black" />
+              <Input
+                value={awayTeamRating.toFixed(2)}
+                disabled
+                className="font-bold text-black"
+              />
             </div>
           </CardContent>
         </Card>

@@ -8,9 +8,15 @@ import {
   TableHeader,
 } from "../Components/ui/table";
 import { Button } from "../Components/ui/button";
-import {  LucideSortAsc, LucideSortDesc, Users } from "lucide-react";
+import { LucideSortAsc, LucideSortDesc, Users } from "lucide-react";
 
-const NationalTeamsTable = ({ data, onViewPlayers, sortOrder, setSortOrder, setSortBy }) => {
+const NationalTeamsTable = ({
+  data,
+  onViewPlayers,
+  sortOrder,
+  setSortOrder,
+  setSortBy,
+}) => {
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -36,10 +42,10 @@ const NationalTeamsTable = ({ data, onViewPlayers, sortOrder, setSortOrder, setS
                 )}
               </span>
             </TableHead>
-            <TableHead className="font-semibold p-3">Type</TableHead> 
+            <TableHead className="font-semibold p-3">Type</TableHead>
             <TableHead className="font-semibold p-3">Actions</TableHead>
             <TableHead className="flex items-center gap-1.5 p-3">
-            <span className="font-semibold">Rating</span>
+              <span className="font-semibold">Rating</span>
               <span className="cursor-pointer">
                 {sortOrder === "asc" ? (
                   <LucideSortDesc
@@ -79,9 +85,7 @@ const NationalTeamsTable = ({ data, onViewPlayers, sortOrder, setSortOrder, setS
                   </Button>
                 </div>
               </TableCell>
-              <TableCell>
-                {team.rating}
-              </TableCell>
+              <TableCell>{team.rating}</TableCell>
             </TableRow>
           ))}
         </TableBody>
