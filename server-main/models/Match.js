@@ -82,6 +82,9 @@ const MatchSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    league : {
+      type : String
+    },
     odds: {
       homeWin: {
         type: Number,

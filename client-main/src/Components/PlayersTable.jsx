@@ -11,21 +11,12 @@ import { Button } from "../Components/ui/button";
 import { Edit } from "lucide-react";
 
 const PlayersTable = ({ players, onEdit, isClub = true }) => {
-  const [expandedRows, setExpandedRows] = useState({});
-
   const calculateRating = ({ player }) => {
     const totalRating = player.ratingHistory.reduce(
       (acc, currRating) => acc + currRating.newRating,
       0
     );
     return totalRating.toFixed(2);
-  };
-
-  const toggleRow = (playerId) => {
-    setExpandedRows((prev) => ({
-      ...prev,
-      [playerId]: !prev[playerId],
-    }));
   };
 
   return (

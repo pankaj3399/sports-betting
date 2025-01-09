@@ -186,6 +186,7 @@ const AddMatch = () => {
     type: "ClubTeam",
     date: "",
     venue: "",
+    league : "",
     rating: {
       homeTeamRating: 0,
       awayTeamRating: 0,
@@ -684,6 +685,20 @@ const AddMatch = () => {
                   />
                 </div>
               </div>
+              <div className="w-72">
+                  <label className="block mb-1">League</label>
+                  <Input
+                    type="text"
+                    value={matchData.league}
+                    onChange={(e) =>
+                      setMatchData((prev) => ({
+                        ...prev,
+                        league: e.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </div>
             </div>
           </CardContent>
         </Card>
