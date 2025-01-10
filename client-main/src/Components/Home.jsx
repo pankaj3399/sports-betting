@@ -130,6 +130,12 @@ const Home = () => {
     navigate(`/clubs/${clubId}/players`);
   };
 
+  const onNavigation = (clubName) => {
+    navigate(`/matches?team=${clubName}`)
+  }
+
+
+
   const handleClosePlayersModal = () => {
     setShowPlayersModal(false);
     setSelectedClubId(null);
@@ -222,6 +228,7 @@ const Home = () => {
             <ClubsTable
               data={data}
               onViewPlayers={handleViewPlayers}
+              onNavigation={onNavigation}
               onEdit={(club) => {
                 setSelectedClubId(club._id);
                 setClubName(club.name);

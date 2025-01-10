@@ -13,6 +13,7 @@ import {
   LucideSortAsc,
   LucideSortDesc,
   Trash2,
+  TrophyIcon,
   Users,
 } from "lucide-react";
 
@@ -24,7 +25,9 @@ const ClubsTable = ({
   sortOrder,
   setSortBy,
   setSortOrder,
+  onNavigation,
 }) => {
+  
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -87,6 +90,16 @@ const ClubsTable = ({
                     <div className="flex flex-row gap-2 items-center">
                       <p>See Players</p>
                       <Users size={16} />
+                    </div>
+                  </Button>
+                  <Button
+                    onClick={() => onNavigation(club.name)}
+                    variant="default"
+                    className="mr-2"
+                  >
+                    <div className="flex flex-row gap-2 items-center">
+                      <p>See Matches</p>
+                      <TrophyIcon size={16} />
                     </div>
                   </Button>
                   <Button
