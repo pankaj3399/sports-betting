@@ -42,64 +42,68 @@ router.get("/matches", async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const searchTerm = req.query.search || "";
+    const teamName = req.query.team || "";
 
-    const query = {};
-    if (searchTerm) {
-      query["$or"] = [{ venue: { $regex: searchTerm, $options: "i" } }];
+    const matchStage = {};
+
+    if (searchTerm || teamName) {
+      matchStage["$or"] = [];
+
+      if (searchTerm) {
+        matchStage["$or"].push(
+          { "homeTeam.team.name": { $regex: searchTerm, $options: "i" } },
+          { "awayTeam.team.name": { $regex: searchTerm, $options: "i" } }
+        );
+      }
+
+      if (teamName) {
+        matchStage["$or"].push(
+          { "homeTeam.team.name": { $regex: teamName, $options: "i" } },
+          { "awayTeam.team.name": { $regex: teamName, $options: "i" } }
+        );
+      }
     }
 
-    const total = await Match.countDocuments(query);
+    const basePipeline = [
+      {
+        $lookup: {
+          from: "clubteams",
+          localField: "homeTeam.team",
+          foreignField: "_id",
+          as: "homeTeam.team",
+        },
+      },
+      { $unwind: { path: "$homeTeam.team", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "clubteams",
+          localField: "awayTeam.team",
+          foreignField: "_id",
+          as: "awayTeam.team",
+        },
+      },
+      { $unwind: { path: "$awayTeam.team", preserveNullAndEmptyArrays: true } },
+    ];
 
-    if (total === 0) {
-      return res.json({
-        matches: [],
-        currentPage: 1,
-        totalPages: 0,
-        total: 0,
-        message: searchTerm
-          ? `No matches found matching "${searchTerm}"`
-          : "No matches found",
-      });
-    }
+    const aggregatePipeline = [
+      ...basePipeline,
+      { $match: matchStage },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+    ];
+
+    const matches = await Match.aggregate(aggregatePipeline);
+
+    // Count total matches
+    const totalMatchesPipeline = [...basePipeline, { $match: matchStage }, { $count: "total" }];
+    const totalMatches = await Match.aggregate(totalMatchesPipeline);
+    const total = totalMatches[0]?.total || 0;
 
     const totalPages = Math.ceil(total / limit);
-    const validPage = Math.min(Math.max(1, page), totalPages);
-
-    // Get matches and populate references using the helper function with lean
-    const matches = await populateMatchData(
-      Match.find(query)
-        .sort({ date: -1 })
-        .skip((validPage - 1) * limit)
-        .limit(limit),
-      true // Set lean to true
-    );
-
-    // Transform the matches to include formatted team names
-    const transformedMatches = matches.map((match) => ({
-      ...match,
-      homeTeam: {
-        ...match.homeTeam,
-        teamName:
-          match.type === "ClubTeam"
-            ? match.homeTeam.team?.name
-            : match.homeTeam.team
-            ? `${match.homeTeam.team.country} ${match.homeTeam.team.type}`
-            : "Unknown Team",
-      },
-      awayTeam: {
-        ...match.awayTeam,
-        teamName:
-          match.type === "ClubTeam"
-            ? match.awayTeam.team?.name
-            : match.awayTeam.team
-            ? `${match.awayTeam.team.country} ${match.awayTeam.team.type}`
-            : "Unknown Team",
-      },
-    }));
 
     res.json({
-      matches: transformedMatches,
-      currentPage: validPage,
+      matches,
+      currentPage: page,
       totalPages,
       total,
       pageSize: limit,
@@ -112,6 +116,7 @@ router.get("/matches", async (req, res) => {
     });
   }
 });
+
 
 // Get single match route
 router.get("/matches/:id", async (req, res) => {

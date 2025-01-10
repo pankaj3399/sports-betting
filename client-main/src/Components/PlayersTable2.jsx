@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Table,
   TableHead,
@@ -6,85 +6,52 @@ import {
   TableBody,
   TableCell,
   TableHeader,
-} from "../Components/ui/table";
-import { LucideSortAsc, LucideSortDesc } from "lucide-react";
+} from "@/components/ui/table";
+import { ArrowUpDown } from "lucide-react";
+
 const PlayersTable2 = ({ players, sortOrder, setSortBy, setSortOrder }) => {
-  const calculateAge = ({ player }) => {
+  const calculateAge = (dateOfBirth) => {
     const currentDate = new Date();
-    const birthDate = new Date(player.dateOfBirth);
-
+    const birthDate = new Date(dateOfBirth);
     let age = currentDate.getFullYear() - birthDate.getFullYear();
-
-    // Adjust age if the current date is before the player's birthdate this year
     const isBirthdayPassed =
       currentDate.getMonth() > birthDate.getMonth() ||
       (currentDate.getMonth() === birthDate.getMonth() &&
         currentDate.getDate() >= birthDate.getDate());
-
     if (!isBirthdayPassed) {
       age--;
     }
-
     return age;
   };
 
+  const SortableHeader = ({ title, field }) => (
+    <TableHead className="font-semibold text-gray-700">
+      <button
+        onClick={() => {
+          setSortBy(field);
+          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+        }}
+        className="flex items-center gap-1 hover:text-gray-900"
+      >
+        {title}
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    </TableHead>
+  );
+
   return (
-    <div className="h-full overflow-y-auto">
-      <Table className="w-[1350px] mx-auto">
-        <TableHeader className="px-20">
-          <TableRow>
-            <TableHead className="w-1/6 font-semibold text-gray-700 border-b border-gray-200">
+    <div className="w-full overflow-auto flex justify-center items-center">
+      <Table className="p-5">
+        <TableHeader>
+          <TableRow className="bg-gray-50">
+            <TableHead className="w-32 font-semibold text-gray-700">
               Position
             </TableHead>
-            <TableHead className="w-1/6 font-semibold text-gray-700 border-b border-gray-200">
-            <div className="flex items-center gap-1.5">
-                <span className="font-semibold">Player</span>
-                <span className="cursor-pointer">
-                  {sortOrder === "asc" ? (
-                    <LucideSortDesc
-                      onClick={() => {
-                        setSortBy("name");
-                        setSortOrder("desc");
-                      }}
-                    />
-                  ) : (
-                    <LucideSortAsc
-                      onClick={() => {
-                        setSortBy("name");
-                        setSortOrder("asc");
-                      }}
-                    />
-                  )}
-                </span>
-            </div>
-            </TableHead>
-            <TableHead className="flex items-center gap-1.5 p-3">
-              <span className="font-semibold">Rating</span>
-              <span className="cursor-pointer">
-                {sortOrder === "asc" ? (
-                  <LucideSortDesc
-                    onClick={() => {
-                      setSortBy("rating");
-                      setSortOrder("desc");
-                    }}
-                  />
-                ) : (
-                  <LucideSortAsc
-                    onClick={() => {
-                      setSortBy("rating");
-                      setSortOrder("asc");
-                    }}
-                  />
-                )}
-              </span>
-            </TableHead>
-            <TableHead className="w-1/6 font-semibold text-gray-700 border-b border-gray-200 whitespace-nowrap">
-              Country
-            </TableHead>
-            <TableHead className="w-1/6 font-semibold text-gray-700 border-b border-gray-200 text-center">
-              Club
-            </TableHead>
-            <TableHead className="w-1/6 font-semibold text-gray-700 border-b border-gray-200 text-right">
+            <SortableHeader title="Player" field="name" />
+            <SortableHeader title="Rating" field="rating" />
+            <SortableHeader title="Country" field="country" />
+            <SortableHeader title="Club" field="club" />
+            <TableHead className="w-16 text-right font-semibold text-gray-700">
               Age
             </TableHead>
           </TableRow>
@@ -96,26 +63,18 @@ const PlayersTable2 = ({ players, sortOrder, setSortBy, setSortOrder }) => {
                 key={player._id}
                 className="hover:bg-gray-50 transition-colors"
               >
-                <TableCell>
+                <TableCell className="py-2">
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     {player.positionDetails.position || "N/A"}
                   </span>
                 </TableCell>
-                <TableCell className="font-medium truncate py-3">
-                  {player.name}
-                </TableCell>
+                <TableCell className="font-medium">{player.name}</TableCell>
                 <TableCell>{player.rating || 0}</TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {player.nationalTeams[0]?.name ?? "NaN"}
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="inline-flex items-center justify-center gap-2">
-                    {player.clubDetails?.name}
-                  </div>
-                </TableCell>
+                <TableCell>{player.nationalTeams[0]?.name ?? "-"}</TableCell>
+                <TableCell>{player.clubDetails?.name ?? "-"}</TableCell>
                 <TableCell className="text-right">
                   <span className="font-medium">
-                    {calculateAge({ player })}
+                    {calculateAge(player.dateOfBirth)}
                   </span>
                 </TableCell>
               </TableRow>

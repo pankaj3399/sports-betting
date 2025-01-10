@@ -240,8 +240,13 @@ module.exports = {
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(perPage, 10);
 
+      let sortField = sortBy;
+      if (sortBy === "club") {
+        sortField = "clubDetails.name"; 
+      }
+
       const sortOptions = {};
-      sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
+      sortOptions[sortField] = sortOrder === "asc" ? 1 : -1;
 
       const pipeline = [
         {

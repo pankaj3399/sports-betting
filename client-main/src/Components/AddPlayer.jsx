@@ -129,7 +129,15 @@ const AddPlayer = () => {
     
         if (index !== null && subfield) {
             const updatedArray = [...player[field]];
-            updatedArray[index][subfield] = value;
+            if (field === 'nationalTeams' && subfield === 'name' && value) {
+                updatedArray[index] = {
+                    ...updatedArray[index],
+                    [subfield]: value,
+                    disabled: false 
+                };
+            } else {
+                updatedArray[index][subfield] = value;
+            }
             setPlayer(prev => ({
                 ...prev,
                 [field]: updatedArray
