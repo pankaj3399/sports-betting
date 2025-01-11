@@ -6,7 +6,7 @@ import {
   TableBody,
   TableCell,
   TableHeader,
-} from "@/components/ui/table";
+} from "../Components/ui/table";
 import { ArrowUpDown } from "lucide-react";
 
 const PlayersTable2 = ({ players, sortOrder, setSortBy, setSortOrder }) => {
