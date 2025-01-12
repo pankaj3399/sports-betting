@@ -14,10 +14,16 @@ export const getNationalTeams = async (country) => {
 
 export const getAllNationalTeams = async ({ page, sortBy, sortOrder, search }) => {
   const { data } = await axios.get(
-    `/country/national-teams?page=${page}&search=${search}&sortBy=${sortBy}&sortOrder=${sortOrder}`
+    `/country/national-teams/all?page=${page}&search=${search}&sortBy=${sortBy}&sortOrder=${sortOrder}`
   );
   return data;
 };
+
+export const getActiveTeams = async () => {
+  const { data } = await axios.get(`/country/active/teams`);
+  return data;
+}
+
 
 export const getNationalTeamPlayers = async (teamId, date) => {
   const encodedDate = date ? `?date=${encodeURIComponent(date)}` : "";

@@ -29,7 +29,8 @@ mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
         app.use('/api/player', require('./routes/Player'));
         app.use('/api/position', require('./routes/Position'));
         app.use('/api/country', require('./routes/Country'));
-        app.use('/api/match', require('./routes/Match')); // Added Match routes
+        app.use('/api/match', require('./routes/Match'));
+        app.use('/api/fixture', require('./routes/Fixtures'));
 
         // Log all registered routes
         console.log('\nRegistered Routes:');

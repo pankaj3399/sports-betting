@@ -9,18 +9,31 @@ import { Label } from "@radix-ui/react-label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Input } from "./ui/input";
 import { PlayerList, TeamSelector } from "./AddMatch";
+import { useLocation } from "react-router-dom";
 
 const PredictMatchPage = () => {
   const { toast } = useToast();
-  const [matchType, setMatchType] = useState("ClubTeam");
   const [homePlayers, setHomePlayers] = useState([]);
   const [awayPlayers, setAwayPlayers] = useState([]);
-  const [selectedHomeCountry, setSelectedHomeCountry] = useState(null);
-  const [selectedAwayCountry, setSelectedAwayCountry] = useState(null);
   const [homeNationalTeams, setHomeNationalTeams] = useState([]);
   const [awayNationalTeams, setAwayNationalTeams] = useState([]);
   const [homeTeamRating, setHomeTeamRating] = useState(0);
   const [awayTeamRating, setAwayTeamRating] = useState(0);
+
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const params = Object.fromEntries(queryParams);
+  const [matchType, setMatchType] = useState(params.matchType ?? "ClubTeam");
+  const [selectedHomeCountry, setSelectedHomeCountry] = useState(
+    matchType === "NationalTeam"
+      ? { value: params.homeCountry, label: params.homeCountry }
+      : null
+  );
+  const [selectedAwayCountry, setSelectedAwayCountry] = useState(
+    matchType === "NationalTeam"
+      ? { value: params.awayCountry, label: params.awayCountry }
+      : null
+  );
 
   const [playerCounts, setPlayerCounts] = useState({
     home: 0,
@@ -28,21 +41,21 @@ const PredictMatchPage = () => {
   });
   const [isPredicted, setIsPredicted] = useState(false);
   const [matchData, setMatchData] = useState({
-    type: "ClubTeam",
-    date: "",
-    venue: "",
-    league: "",
+    type: params.matchType ?? "ClubTeam",
+    date: params.date ?? "",
+    venue: params.venue ?? "",
+    league: params.league ?? "",
     rating: {
       homeTeamRating: 0,
       awayTeamRating: 0,
     },
     homeTeam: {
-      team: "",
+      team: params.homeTeam ?? "",
       score: "",
       players: [],
     },
     awayTeam: {
-      team: "",
+      team: params.awayTeam ?? "",
       score: "",
       players: [],
     },

@@ -14,16 +14,16 @@ module.exports = {
     }
   },
 
-  // async fetchAllNationalTeams(req, res) {
-  //     try {
-  //         const { country } = req.query;
-  //         const nationalTeams = await NationalTeam.find({ country })
-  //             .select('country type _id'); // Only select needed fields
-  //         return res.status(200).send(nationalTeams);
-  //     } catch (error) {
-  //         return res.status(400).send(error);
-  //     }
-  // },
+  async fetchAllNationalTeamsByCountry(req, res) {
+      try {
+          const { country } = req.query;
+          const nationalTeams = await NationalTeam.find({ country })
+              .select('country type _id'); // Only select needed fields
+          return res.status(200).send(nationalTeams);
+      } catch (error) {
+          return res.status(400).send(error);
+      }
+  },
 
   async fetchAllNationalTeams(req, res) {
     try {
@@ -34,19 +34,19 @@ module.exports = {
         sortOrder = "asc",
         search = "",
       } = req.query;
-  
+
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(limit, 10);
-  
+
       if (pageNum <= 0 || limitNum <= 0) {
         return res
           .status(400)
           .json({ message: "Page and limit must be positive integers." });
       }
-  
+
       const sortOptions = {};
       sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
-  
+
       const pipeline = [
         {
           $match: {
@@ -102,7 +102,7 @@ module.exports = {
           $limit: limitNum,
         },
       ];
-  
+
       const totalTeamsPipeline = [
         {
           $match: {
@@ -113,21 +113,21 @@ module.exports = {
           $count: "totalTeams",
         },
       ];
-  
+
       const [teams, totalTeamsResult] = await Promise.all([
         NationalTeam.aggregate(pipeline),
         NationalTeam.aggregate(totalTeamsPipeline),
       ]);
-  
+
       const totalTeams = totalTeamsResult[0]?.totalTeams || 0;
-  
+
       const response = {
         totalTeams,
         totalPages: Math.ceil(totalTeams / limitNum),
         currentPage: pageNum,
         teams,
       };
-  
+
       return res.status(200).json(response);
     } catch (error) {
       return res.status(400).json({
@@ -136,7 +136,7 @@ module.exports = {
       });
     }
   },
-  
+
   async getNationalTeamPlayers(req, res) {
     try {
       const { teamId } = req.params;

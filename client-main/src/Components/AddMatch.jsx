@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
 import { Card, CardContent } from "../Components/ui/card";
@@ -102,7 +102,7 @@ export const TeamSelector = ({
     const fetchNationalTeams = async () => {
       if (selectedCountry?.value) {
         try {
-          const teams = await getNationalTeams(selectedCountry.value);
+          const teams = await getNationalTeams(selectedCountry.value);          
           setNationalTeams(teams);
         } catch (error) {
           console.error("Error fetching national teams:", error);
@@ -168,11 +168,8 @@ const AddMatch = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [matchType, setMatchType] = useState("ClubTeam");
   const [homePlayers, setHomePlayers] = useState([]);
   const [awayPlayers, setAwayPlayers] = useState([]);
-  const [selectedHomeCountry, setSelectedHomeCountry] = useState(null);
-  const [selectedAwayCountry, setSelectedAwayCountry] = useState(null);
   const [homeNationalTeams, setHomeNationalTeams] = useState([]);
   const [awayNationalTeams, setAwayNationalTeams] = useState([]);
   const [homeTeamRating, setHomeTeamRating] = useState(0);
@@ -181,23 +178,33 @@ const AddMatch = () => {
     home: 0,
     away: 0,
   });
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const params = Object.fromEntries(queryParams);
+  const [matchType, setMatchType] = useState(params.matchType ?? "ClubTeam");
+  const [selectedHomeCountry, setSelectedHomeCountry] = useState(
+    matchType === "NationalTeam" ? { value: params.homeCountry, label: params.homeCountry } : null
+  );
+  const [selectedAwayCountry, setSelectedAwayCountry] = useState(
+    matchType === "NationalTeam" ? { value: params.awayCountry, label: params.awayCountry } : null
+  );
 
   const [matchData, setMatchData] = useState({
-    type: "ClubTeam",
-    date: "",
-    venue: "",
-    league : "",
+    type: params.matchType ?? "ClubTeam",
+    date: params.date ?? "",
+    venue: params.venue ?? "",
+    league : params.league ?? "",
     rating: {
       homeTeamRating: 0,
       awayTeamRating: 0,
     },
     homeTeam: {
-      team: "",
+      team: params.homeTeam ?? "",
       score: "",
       players: [],
     },
     awayTeam: {
-      team: "",
+      team: params.awayTeam ?? "",
       score: "",
       players: [],
     },
