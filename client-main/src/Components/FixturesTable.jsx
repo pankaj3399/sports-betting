@@ -6,9 +6,9 @@ import {
   TableBody,
   TableCell,
   TableHeader,
-} from "@/components/ui/table";
+} from "./components/ui/table";
 import { ArrowUpDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "./components/ui/button";
 
 const FixturesTable = ({ fixtures, sortOrder, setSortBy, setSortOrder, handleAddMatch, handlePredictMatch }) => {
   const formatDate = (dateString) => {
