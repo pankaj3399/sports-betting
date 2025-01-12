@@ -15,6 +15,8 @@ const nationalTeamSchema = new mongoose.Schema({
         required: true,
         enum: ['Active', 'Inactive']
     },
+}, {
+    collection: 'nationalteams' 
 });
 
 const NationalTeam = mongoose.model('NationalTeam', nationalTeamSchema);

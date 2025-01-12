@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
-import { getNationalTeams } from "../api/Country"; // Add this import
+import { getNationalTeams } from "../api/Country"; 
 import { useQuery } from '@tanstack/react-query';
 import { getActiveClubs } from '../api/Clubs';
 import { getPositions } from '../api/Position';
 import { getCountries } from '../api/Country';
-import Loader from './Loader/Loader';
 import Select from "react-select";
 
 const EditPlayerModal = ({

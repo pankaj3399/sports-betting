@@ -18,6 +18,9 @@ const Header = () => {
           <Link to="/addplayer" className="mr-4 text-white text-sm sm:text-md cursor-pointer">
             Add Player
           </Link>
+          <Link to="/fixtures" className="mr-4 text-white text-sm sm:text-md cursor-pointer">
+            Fixtures
+          </Link>
           <Link to="/matches" className="mr-4 text-white text-sm sm:text-md cursor-pointer">
             Matches
           </Link>
