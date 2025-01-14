@@ -134,8 +134,6 @@ const Home = () => {
     navigate(`/matches?team=${clubName}`)
   }
 
-
-
   const handleClosePlayersModal = () => {
     setShowPlayersModal(false);
     setSelectedClubId(null);
