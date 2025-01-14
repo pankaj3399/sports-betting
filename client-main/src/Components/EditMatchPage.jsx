@@ -6,16 +6,94 @@ import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
 import { Card, CardContent } from "../Components/ui/card";
 import { getActiveClubs } from "../api/Clubs";
-import { getCountries } from "../api/Country";
+import { getCountries, getNationalTeams } from "../api/Country";
 import { RadioGroup, RadioGroupItem } from "../Components/ui/radio-group";
 import { Label } from "../Components/ui/label";
+import Select from "react-select";
 import {
   calculateExpectedPoints,
   calculateRatingChange,
   getMatchPoints,
   PlayerList,
-  TeamSelector,
 } from "./AddMatch";
+
+const TeamSelector = ({
+  isHome,
+  matchType,
+  selectedTeam,
+  onTeamChange,
+  clubsData,
+  countriesData,
+  selectedCountry,
+  setSelectedCountry,
+  nationalTeams,
+  setNationalTeams,
+}) => {
+  useEffect(() => {
+    const fetchNationalTeams = async () => {
+      if (selectedCountry?.value) {
+        try {
+          const teams = await getNationalTeams(selectedCountry.value);
+          setNationalTeams(teams);
+        } catch (error) {
+          console.error("Error fetching national teams:", error);
+        }
+      }
+    };
+
+    if (matchType === "NationalTeam" && selectedCountry) {
+      fetchNationalTeams();
+    }
+  }, [selectedCountry, matchType, setNationalTeams]);
+
+  if (matchType === "ClubTeam") {
+    return (
+      <Select
+        value={selectedTeam}
+        onChange={onTeamChange}
+        options={
+          clubsData?.map((club) => ({
+            label: club.name,
+            value: club._id,
+          })) || []
+        }
+        placeholder={`Select ${isHome ? "Home" : "Away"} Team`}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Select
+        value={selectedCountry}
+        onChange={(selected) => {
+          setSelectedCountry(selected);
+          onTeamChange(null);
+        }}
+        options={
+          countriesData?.map((country) => ({
+            label: typeof country === "string" ? country : country.country,
+            value: typeof country === "string" ? country : country.country,
+          })) || []
+        }
+        placeholder="Select Country"
+      />
+      {selectedCountry && (
+        <Select
+          value={selectedTeam}
+          onChange={onTeamChange}
+          options={
+            nationalTeams?.map((team) => ({
+              label: `${team.country} ${team.type}`,
+              value: team._id,
+            })) || []
+          }
+          placeholder="Select National Team"
+        />
+      )}
+    </div>
+  );
+};
 
 const EditMatchPage = () => {
   const { matchId } = useParams();
@@ -109,7 +187,7 @@ const EditMatchPage = () => {
       if (playerIndex === -1 && isStarter) {
         updatedPlayers = [
           ...currentPlayers,
-          { player: player , starter: true, _id : player._id },
+          { player: player, starter: true, _id: player._id },
         ];
       } else if (!isStarter) {
         updatedPlayers = currentPlayers.filter(
@@ -117,7 +195,9 @@ const EditMatchPage = () => {
         );
       } else {
         updatedPlayers = currentPlayers.map((p) =>
-          p.player._id === player._id ? { ...p, starter: true, _id : player._id } : p
+          p.player._id === player._id
+            ? { ...p, starter: true, _id: player._id }
+            : p
         );
       }
 
@@ -160,6 +240,16 @@ const EditMatchPage = () => {
       });
 
       setMatchType(data.type || "ClubTeam");
+      setSelectedHomeCountry(
+        data.type === "NationalTeam"
+          ? { value: data.homeTeam.team.country, label: data.homeTeam.team.country }
+          : null
+      );
+      setSelectedAwayCountry(
+        data.type === "NationalTeam"
+          ? { value: data.awayTeam.team.country, label: data.awayTeam.team.country }
+          : null
+      );
     } catch (error) {
       toast({
         title: "Error while fetching info!",

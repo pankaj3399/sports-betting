@@ -70,18 +70,56 @@ router.get("/matches", async (req, res) => {
           from: "clubteams",
           localField: "homeTeam.team",
           foreignField: "_id",
-          as: "homeTeam.team",
+          as: "clubHomeTeam",
         },
       },
-      { $unwind: { path: "$homeTeam.team", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "nationalteams",
+          localField: "homeTeam.team",
+          foreignField: "_id",
+          as: "nationalHomeTeam",
+        },
+      },
+      {
+        $addFields: {
+          "homeTeam.team": {
+            $cond: [
+              { $eq: ["$type", "ClubTeam"] },
+              { $arrayElemAt: ["$clubHomeTeam", 0] },
+              { $arrayElemAt: ["$nationalHomeTeam", 0] },
+            ],
+          },
+        },
+      },
       {
         $lookup: {
           from: "clubteams",
           localField: "awayTeam.team",
           foreignField: "_id",
-          as: "awayTeam.team",
+          as: "clubAwayTeam",
         },
       },
+      {
+        $lookup: {
+          from: "nationalteams",
+          localField: "awayTeam.team",
+          foreignField: "_id",
+          as: "nationalAwayTeam",
+        },
+      },
+      {
+        $addFields: {
+          "awayTeam.team": {
+            $cond: [
+              { $eq: ["$type", "ClubTeam"] },
+              { $arrayElemAt: ["$clubAwayTeam", 0] },
+              { $arrayElemAt: ["$nationalAwayTeam", 0] },
+            ],
+          },
+        },
+      },
+      { $unwind: { path: "$homeTeam.team", preserveNullAndEmptyArrays: true } },
       { $unwind: { path: "$awayTeam.team", preserveNullAndEmptyArrays: true } },
     ];
 
@@ -158,46 +196,46 @@ router.get("/matches/:id", async (req, res) => {
 router.put("/edit-match/:matchId", async (req, res) => {
   try {
     const { matchId } = req.params;
-    console.log('⭐ Starting match update process for matchId:', matchId);
-    console.log('Received update data:', JSON.stringify(req.body, null, 2));
+    // console.log('⭐ Starting match update process for matchId:', matchId);
+    // console.log('Received update data:', JSON.stringify(req.body, null, 2));
 
     // 1. Fetch and Validate Match ID
     const existingMatch = await Match.findById(matchId);
     if (!existingMatch) {
-      console.log('❌ Match not found with ID:', matchId);
+      // console.log('❌ Match not found with ID:', matchId);
       return res.status(404).json({
         message: "Match not found",
         error: "MATCH_NOT_FOUND",
       });
     }
-    console.log('✅ Found existing match:', existingMatch._id);
+    // console.log('✅ Found existing match:', existingMatch._id);
 
     // 2. Date Validation
     const matchDate = new Date(req.body.date);
-    console.log('Validating match date:', matchDate);
+    // console.log('Validating match date:', matchDate);
     if (matchDate > new Date()) {
-      console.log('❌ Invalid date - match date is in the future');
+      // console.log('❌ Invalid date - match date is in the future');
       return res.status(400).json({
         message: "Match date must be in the past",
         error: "INVALID_DATE",
       });
     }
-    console.log('✅ Date validation passed');
+    // console.log('✅ Date validation passed');
 
     // 3. Type Validation
-    console.log('Validating match type:', req.body.type);
+    // console.log('Validating match type:', req.body.type);
     if (req.body.type && !["ClubTeam", "NationalTeam"].includes(req.body.type)) {
-      console.log('❌ Invalid match type:', req.body.type);
+      // console.log('❌ Invalid match type:', req.body.type);
       return res.status(400).json({
         message: "Invalid match type",
         error: "INVALID_TYPE",
       });
     }
-    console.log('✅ Type validation passed');
+    // console.log('✅ Type validation passed');
 
     // 4. Validate Teams
     if (req.body.homeTeam.team === req.body.awayTeam.team) {
-      console.log('❌ Same team on both sides');
+      // console.log('❌ Same team on both sides');
       return res.status(400).json({
         message: "Home team and away team cannot be the same",
         error: "SAME_TEAM",
@@ -205,7 +243,7 @@ router.put("/edit-match/:matchId", async (req, res) => {
     }
 
     // 5. Calculate Rating Changes
-    console.log('Calculating rating changes');
+    // console.log('Calculating rating changes');
     const homeExpectedPoints = calculateExpectedPoints(req.body.odds);
     const awayExpectedPoints = calculateExpectedPoints({
       homeWin: req.body.odds.awayWin,
@@ -225,13 +263,13 @@ router.put("/edit-match/:matchId", async (req, res) => {
     const homeRatingChange = calculateRatingChange(homeActualPoints, homeExpectedPoints);
     const awayRatingChange = calculateRatingChange(awayActualPoints, awayExpectedPoints);
 
-    console.log('Rating changes calculated:', {
-      home: homeRatingChange,
-      away: awayRatingChange
-    });
+    // console.log('Rating changes calculated:', {
+    //   home: homeRatingChange,
+    //   away: awayRatingChange
+    // });
 
     // 6. Handle Player Updates
-    console.log('Processing player updates');
+    // console.log('Processing player updates');
     const getDeselectedPlayers = (isHome) => {
       let deselectedPlayers = [];
       let newPlayerIds;
@@ -254,10 +292,10 @@ router.put("/edit-match/:matchId", async (req, res) => {
     const homeTeamDeselectedPlayers = getDeselectedPlayers(true);
     const awayTeamDeselectedPlayers = getDeselectedPlayers(false);
 
-    console.log('Deselected players:', {
-      home: homeTeamDeselectedPlayers,
-      away: awayTeamDeselectedPlayers
-    });
+    // console.log('Deselected players:', {
+    //   home: homeTeamDeselectedPlayers,
+    //   away: awayTeamDeselectedPlayers
+    // });
 
     // 7. Prepare Update Data
     const updatedMatchData = {
@@ -284,10 +322,10 @@ router.put("/edit-match/:matchId", async (req, res) => {
       odds: req.body.odds
     };
 
-    console.log('Prepared update data:', JSON.stringify(updatedMatchData, null, 2));
+    // console.log('Prepared update data:', JSON.stringify(updatedMatchData, null, 2));
 
     // 8. Update Player Ratings
-    console.log('Updating player ratings');
+    // console.log('Updating player ratings');
     
     // Remove ratings for deselected players
     await Promise.all([
@@ -334,7 +372,7 @@ router.put("/edit-match/:matchId", async (req, res) => {
     ]);
 
     // 9. Update Match
-    console.log('Updating match document');
+    // console.log('Updating match document');
     const updatedMatch = await Match.findByIdAndUpdate(
       matchId,
       updatedMatchData,
@@ -353,7 +391,7 @@ router.put("/edit-match/:matchId", async (req, res) => {
     .populate("homeTeam.players.player", "name position")
     .populate("awayTeam.players.player", "name position");
 
-    console.log('✅ Match updated successfully');
+    // console.log('✅ Match updated successfully');
 
     // 10. Transform Response
     const transformedMatch = {
@@ -373,7 +411,7 @@ router.put("/edit-match/:matchId", async (req, res) => {
     };
 
     // 11. Send Response
-    console.log('Sending response');
+    // console.log('Sending response');
     return res.json({
       success: true,
       match: transformedMatch,

@@ -1,17 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getClubs, addClub, editClub, deleteClub } from "../api/Clubs";
-import { getPositions } from "../api/Position";
-import { getCountries } from "../api/Country";
+import { useQuery,useQueryClient } from "@tanstack/react-query";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
 import Loader from "./Loader/Loader";
-import EditPlayerModal from "./EditPlayerModal";
-import PlayersTable from "./PlayersTable";
-import ClubsTable from "./ClubsTable";
 import { useNavigate } from "react-router-dom";
 import PlayersTable2 from "./PlayersTable2";
 import { getAllPlayers } from "../api/Player";
+
 const Players = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
@@ -20,7 +15,7 @@ const Players = () => {
   const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
-  // Clubs query
+  
   const { isLoading, error, data } = useQuery({
     queryKey: ["players", page, searchDebounce, sortBy, sortOrder],
     queryFn: () => getAllPlayers({ page, search, sortBy, sortOrder }),

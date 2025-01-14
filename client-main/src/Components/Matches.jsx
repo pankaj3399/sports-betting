@@ -50,6 +50,7 @@ const Matches = () => {
             type="text"
             placeholder="Search matches based on teams"
             value={search}
+            autoFocus
             onChange={(e) => setSearch(e.target.value)}
             className="w-64"
           />
