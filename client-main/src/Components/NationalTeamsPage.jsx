@@ -162,7 +162,7 @@ const NationalTeamsPage = () => {
 
             <div className="flex-1 overflow-hidden">
               {playersData && (
-                <PlayersTable players={playersData} onEdit={handleEditPlayer} />
+                <PlayersTable players={playersData} onEdit={handleEditPlayer} isClub={false} />
               )}
             </div>
 

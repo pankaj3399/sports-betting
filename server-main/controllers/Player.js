@@ -263,6 +263,13 @@ module.exports = {
                 in: { $add: ["$$value", "$$this.newRating"] },
               },
             },
+            netRating: {
+              $reduce: {
+                input: "$ratingHistory",
+                initialValue: 0,
+                in: { $add: ["$$value", "$$this.netRating"] },
+              },
+            },
           },
         },
         {

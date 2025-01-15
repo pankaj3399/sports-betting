@@ -73,6 +73,9 @@ module.exports = {
                   totalRating: {
                     $sum: "$ratingHistory.newRating",
                   },
+                  totalNetRating: {
+                    $sum: "$ratingHistory.netRating",
+                  },
                 },
               },
             ],
@@ -82,6 +85,7 @@ module.exports = {
         {
           $addFields: {
             rating: { $sum: "$players.totalRating" },
+            netRating : { $sum : "$players.totalNetRating"},
           },
         },
         {
@@ -90,6 +94,7 @@ module.exports = {
             type: 1,
             _id: 1,
             rating: 1,
+            netRating : 1
           },
         },
         {

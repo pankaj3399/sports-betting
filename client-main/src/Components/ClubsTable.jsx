@@ -9,9 +9,8 @@ import {
 } from "../Components/ui/table";
 import { Button } from "../Components/ui/button";
 import {
+  ArrowUpDown,
   Edit,
-  LucideSortAsc,
-  LucideSortDesc,
   Trash2,
   TrophyIcon,
   Users,
@@ -27,53 +26,30 @@ const ClubsTable = ({
   setSortOrder,
   onNavigation,
 }) => {
-  
+  const SortableHeader = ({ title, field }) => (
+    <TableHead className="font-semibold text-gray-700">
+      <button
+        onClick={() => {
+          setSortBy(field);
+          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+        }}
+        className="flex items-center gap-1 hover:text-gray-900"
+      >
+        {title}
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    </TableHead>
+  );
+
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="p-3 flex items-center gap-1.5">
-              <span className="font-semibold">Club Name</span>
-              <span className="cursor-pointer">
-                {sortOrder === "asc" ? (
-                  <LucideSortDesc
-                    onClick={() => {
-                      setSortBy("name");
-                      setSortOrder("desc");
-                    }}
-                  />
-                ) : (
-                  <LucideSortAsc
-                    onClick={() => {
-                      setSortBy("name");
-                      setSortOrder("asc");
-                    }}
-                  />
-                )}
-              </span>
-            </TableHead>
+            <SortableHeader field={"name"} title={"Club Name"} />
             <TableHead className="font-semibold p-3">Actions</TableHead>
-            <TableHead className="flex items-center gap-1.5 p-3">
-              <span className="font-semibold">Rating</span>
-              <span className="cursor-pointer">
-                {sortOrder === "asc" ? (
-                  <LucideSortDesc
-                    onClick={() => {
-                      setSortBy("rating");
-                      setSortOrder("desc");
-                    }}
-                  />
-                ) : (
-                  <LucideSortAsc
-                    onClick={() => {
-                      setSortBy("rating");
-                      setSortOrder("asc");
-                    }}
-                  />
-                )}
-              </span>
-            </TableHead>
+            <SortableHeader field={"rating"} title={"Rating"} />
+            <SortableHeader field={"netRating"} title={"Net Rating"} />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -121,6 +97,7 @@ const ClubsTable = ({
                 </div>
               </TableCell>
               <TableCell>{club.rating}</TableCell>
+              <TableCell>{club?.netRating?.toFixed(2) ?? 0}</TableCell>
             </TableRow>
           ))}
         </TableBody>
