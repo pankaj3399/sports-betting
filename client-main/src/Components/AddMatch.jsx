@@ -548,7 +548,7 @@ const AddMatch = () => {
     const awayStarters = matchData.awayTeam.players.filter(
       (p) => p.starter
     ).length;
-    return homeStarters > 1 && awayStarters > 1;
+    return homeStarters > 0 && awayStarters > 0;
   };
   const handleSubmit = async (e) => {
     e.preventDefault();

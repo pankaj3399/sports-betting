@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useQuery,useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
 import Loader from "./Loader/Loader";
@@ -12,7 +12,6 @@ const Players = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchDebounce, setSearchDebounce] = useState("");
-  const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
   

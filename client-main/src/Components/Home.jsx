@@ -114,6 +114,10 @@ const Home = () => {
     },
   });
 
+  const handleNavigateMatch = (player) => {    
+    navigate(`/matches?player=${player._id}`);
+  }
+
   const handleAddClub = () => {
     addClubMutation.mutate({ name: clubName });
   };
@@ -131,8 +135,8 @@ const Home = () => {
   };
 
   const onNavigation = (clubName) => {
-    navigate(`/matches?team=${clubName}`)
-  }
+    navigate(`/matches?team=${clubName}`);
+  };
 
   const handleClosePlayersModal = () => {
     setShowPlayersModal(false);
@@ -201,6 +205,8 @@ const Home = () => {
     }
   };
 
+
+
   if (error) return <div>Error fetching data</div>;
 
   return (
@@ -219,29 +225,29 @@ const Home = () => {
         </Button>
       </div>
 
-        <div className="w-full mt-4">
-          {isLoading ? (
-            <Loader className="pb-10" />
-          ) : (
-            <ClubsTable
-              data={data}
-              onViewPlayers={handleViewPlayers}
-              onNavigation={onNavigation}
-              onEdit={(club) => {
-                setSelectedClubId(club._id);
-                setClubName(club.name);
-                setShowEditModal(true);
-              }}
-              onDelete={(clubId) => {
-                setSelectedClubId(clubId);
-                setShowDeleteModal(true);
-              }}
-              setSortBy={setSortBy}
-              sortOrder={sortOrder}
-              setSortOrder={setSortOrder}
-            />
-          )}
-        </div>
+      <div className="w-full mt-4">
+        {isLoading ? (
+          <Loader className="pb-10" />
+        ) : (
+          <ClubsTable
+            data={data}
+            onViewPlayers={handleViewPlayers}
+            onNavigation={onNavigation}
+            onEdit={(club) => {
+              setSelectedClubId(club._id);
+              setClubName(club.name);
+              setShowEditModal(true);
+            }}
+            onDelete={(clubId) => {
+              setSelectedClubId(clubId);
+              setShowDeleteModal(true);
+            }}
+            setSortBy={setSortBy}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+          />
+        )}
+      </div>
 
       <div className="flex flex-row gap-5 justify-center mt-5">
         <Button onClick={() => setPage(page - 1)} disabled={page === 1}>
@@ -377,7 +383,12 @@ const Home = () => {
 
             <div className="flex-1 overflow-hidden">
               {playersData && (
-                <PlayersTable players={playersData} onEdit={handleEditPlayer} />
+                <PlayersTable
+                  players={playersData}
+                  onEdit={handleEditPlayer}
+                  isClub={true}
+                  onNavigateToMatch={handleNavigateMatch}
+                  />
               )}
             </div>
 

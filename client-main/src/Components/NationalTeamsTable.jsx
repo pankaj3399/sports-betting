@@ -8,7 +8,7 @@ import {
   TableHeader,
 } from "../Components/ui/table";
 import { Button } from "../Components/ui/button";
-import { LucideSortAsc, LucideSortDesc, Users } from "lucide-react";
+import { ArrowUpDown, Users } from "lucide-react";
 
 const NationalTeamsTable = ({
   data,
@@ -17,53 +17,31 @@ const NationalTeamsTable = ({
   setSortOrder,
   setSortBy,
 }) => {
+  const SortableHeader = ({ title, field }) => (
+    <TableHead className="font-semibold text-gray-700">
+      <button
+        onClick={() => {
+          setSortBy(field);
+          setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+        }}
+        className="flex items-center gap-1 hover:text-gray-900"
+      >
+        {title}
+        <ArrowUpDown className="h-4 w-4" />
+      </button>
+    </TableHead>
+  );
+
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="p-3 flex items-center gap-1.5">
-              <span className="font-semibold">National Team</span>
-              <span className="cursor-pointer">
-                {sortOrder === "asc" ? (
-                  <LucideSortDesc
-                    onClick={() => {
-                      setSortBy("country");
-                      setSortOrder("desc");
-                    }}
-                  />
-                ) : (
-                  <LucideSortAsc
-                    onClick={() => {
-                      setSortBy("country");
-                      setSortOrder("asc");
-                    }}
-                  />
-                )}
-              </span>
-            </TableHead>
+            <SortableHeader field={"country"} title={"National Team"} />
             <TableHead className="font-semibold p-3">Type</TableHead>
             <TableHead className="font-semibold p-3">Actions</TableHead>
-            <TableHead className="flex items-center gap-1.5 p-3">
-              <span className="font-semibold">Rating</span>
-              <span className="cursor-pointer">
-                {sortOrder === "asc" ? (
-                  <LucideSortDesc
-                    onClick={() => {
-                      setSortBy("rating");
-                      setSortOrder("desc");
-                    }}
-                  />
-                ) : (
-                  <LucideSortAsc
-                    onClick={() => {
-                      setSortBy("rating");
-                      setSortOrder("asc");
-                    }}
-                  />
-                )}
-              </span>
-            </TableHead>
+            <SortableHeader field={"rating"} title={"Rating"} />
+            <SortableHeader field={"netRating"} title={"Net Rating"} />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -86,6 +64,7 @@ const NationalTeamsTable = ({
                 </div>
               </TableCell>
               <TableCell>{team.rating}</TableCell>
+              <TableCell>{team?.netRating?.toFixed(2) ?? 0}</TableCell>
             </TableRow>
           ))}
         </TableBody>

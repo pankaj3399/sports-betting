@@ -118,6 +118,7 @@ const EditMatchPage = () => {
     type: "ClubTeam",
     date: "",
     venue: "",
+    league : "",
     rating: {
       homeTeamRating: 0,
       awayTeamRating: 0,
@@ -157,7 +158,6 @@ const EditMatchPage = () => {
 
   const handleTeamChange = (selected, isHome) => {
     const teamKey = isHome ? "homeTeam" : "awayTeam";
-    console.log(selected);
     console.log(matchData);
     setMatchData((prev) => ({
       ...prev,
@@ -222,6 +222,7 @@ const EditMatchPage = () => {
         type: data.type || "ClubTeam",
         date: data.date || "",
         venue: data.venue || "",
+        league : data.league || "",
         homeTeam: {
           team: data.homeTeam?.team || "",
           score: data.homeTeam?.score || "",
@@ -537,7 +538,7 @@ const EditMatchPage = () => {
     const awayStarters = matchData.awayTeam.players.filter(
       (p) => p.starter
     ).length;
-    return homeStarters > 1 && awayStarters > 1;
+    return homeStarters > 0 && awayStarters > 0;
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -644,6 +645,20 @@ const EditMatchPage = () => {
                       setMatchData((prev) => ({
                         ...prev,
                         venue: e.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">League</label>
+                  <Input
+                    type="text"
+                    value={matchData.league}
+                    onChange={(e) =>
+                      setMatchData((prev) => ({
+                        ...prev,
+                        league: e.target.value,
                       }))
                     }
                     required

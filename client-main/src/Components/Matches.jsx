@@ -15,10 +15,11 @@ const Matches = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const teamName = decodeURIComponent(queryParams.get("team") ?? "");
+  const playerId = decodeURIComponent(queryParams.get("player") ?? "");
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["matches", page, searchDebounce, teamName],
-    queryFn: () => fetchMatches({ page, search, teamName }),
+    queryKey: ["matches", page, searchDebounce, teamName, playerId],
+    queryFn: () => fetchMatches({ page, search, teamName, playerId }),
   });
 
   useEffect(() => {

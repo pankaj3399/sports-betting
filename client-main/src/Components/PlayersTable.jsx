@@ -8,9 +8,14 @@ import {
   TableHeader,
 } from "../Components/ui/table";
 import { Button } from "../Components/ui/button";
-import { Edit } from "lucide-react";
+import { Edit, TrophyIcon } from "lucide-react";
 
-const PlayersTable = ({ players, onEdit, isClub = true }) => {
+const PlayersTable = ({
+  players,
+  onEdit,
+  onNavigateToMatch,
+  isClub = true,
+}) => {
   const calculateRating = ({ player }) => {
     const totalRating = player.ratingHistory.reduce(
       (acc, currRating) => acc + currRating.newRating,
@@ -65,7 +70,7 @@ const PlayersTable = ({ players, onEdit, isClub = true }) => {
                     ? new Date(player.dateOfBirth).toLocaleDateString()
                     : "N/A"}
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell className="flex items-center justify-center gap-2">
                   <Button
                     onClick={() => onEdit(player)}
                     variant="outline"
@@ -75,6 +80,17 @@ const PlayersTable = ({ players, onEdit, isClub = true }) => {
                     <Edit className="h-4 w-4" />
                     <span className="hidden sm:inline">Edit</span>
                   </Button>
+                  {isClub && (
+                    <Button
+                      onClick={() => onNavigateToMatch(player)}
+                      variant="outline"
+                      size="sm"
+                      className="inline-flex items-center justify-center gap-2 hover:bg-gray-100"
+                    >
+                      <TrophyIcon className="h-4 w-4" />
+                      <span className="hidden sm:inline">Matches</span>
+                    </Button>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <span className="font-medium">

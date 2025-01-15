@@ -4,6 +4,7 @@ const Match = require("../models/Match");
 const Player = require("../models/Player");
 const ClubTeam = require("../models/ClubTeam");
 const NationalTeam = require("../models/NationalTeams");
+const { default: mongoose } = require("mongoose");
 // Helper functions for rating calculations
 const calculateExpectedPoints = (odds) => {
   const winProb = odds.homeWin;
@@ -43,10 +44,11 @@ router.get("/matches", async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const searchTerm = req.query.search || "";
     const teamName = req.query.team || "";
+    const playerId = req.query.playerId || "";
 
     const matchStage = {};
 
-    if (searchTerm || teamName) {
+    if (searchTerm || teamName || playerId) {
       matchStage["$or"] = [];
 
       if (searchTerm) {
@@ -60,6 +62,13 @@ router.get("/matches", async (req, res) => {
         matchStage["$or"].push(
           { "homeTeam.team.name": { $regex: teamName, $options: "i" } },
           { "awayTeam.team.name": { $regex: teamName, $options: "i" } }
+        );
+      }
+
+      if (playerId) {
+        matchStage["$or"].push(
+          { "homeTeam.players.player": new mongoose.Types.ObjectId(playerId) },
+          { "awayTeam.players.player": new mongoose.Types.ObjectId(playerId) }
         );
       }
     }
@@ -133,7 +142,11 @@ router.get("/matches", async (req, res) => {
     const matches = await Match.aggregate(aggregatePipeline);
 
     // Count total matches
-    const totalMatchesPipeline = [...basePipeline, { $match: matchStage }, { $count: "total" }];
+    const totalMatchesPipeline = [
+      ...basePipeline,
+      { $match: matchStage },
+      { $count: "total" },
+    ];
     const totalMatches = await Match.aggregate(totalMatchesPipeline);
     const total = totalMatches[0]?.total || 0;
 
@@ -154,7 +167,6 @@ router.get("/matches", async (req, res) => {
     });
   }
 });
-
 
 // Get single match route
 router.get("/matches/:id", async (req, res) => {
@@ -224,7 +236,10 @@ router.put("/edit-match/:matchId", async (req, res) => {
 
     // 3. Type Validation
     // console.log('Validating match type:', req.body.type);
-    if (req.body.type && !["ClubTeam", "NationalTeam"].includes(req.body.type)) {
+    if (
+      req.body.type &&
+      !["ClubTeam", "NationalTeam"].includes(req.body.type)
+    ) {
       // console.log('❌ Invalid match type:', req.body.type);
       return res.status(400).json({
         message: "Invalid match type",
@@ -260,8 +275,14 @@ router.put("/edit-match/:matchId", async (req, res) => {
       req.body.homeTeam.score
     );
 
-    const homeRatingChange = calculateRatingChange(homeActualPoints, homeExpectedPoints);
-    const awayRatingChange = calculateRatingChange(awayActualPoints, awayExpectedPoints);
+    const homeRatingChange = calculateRatingChange(
+      homeActualPoints,
+      homeExpectedPoints
+    );
+    const awayRatingChange = calculateRatingChange(
+      awayActualPoints,
+      awayExpectedPoints
+    );
 
     // console.log('Rating changes calculated:', {
     //   home: homeRatingChange,
@@ -278,12 +299,12 @@ router.put("/edit-match/:matchId", async (req, res) => {
         newPlayerIds = new Set(req.body.homeTeam.players.map((p) => p.player));
         deselectedPlayers = existingMatch.homeTeam.players
           .filter((p) => !newPlayerIds.has(p.player.toString()))
-          .map(p => p.player);
+          .map((p) => p.player);
       } else {
         newPlayerIds = new Set(req.body.awayTeam.players.map((p) => p.player));
         deselectedPlayers = existingMatch.awayTeam.players
           .filter((p) => !newPlayerIds.has(p.player.toString()))
-          .map(p => p.player);
+          .map((p) => p.player);
       }
 
       return deselectedPlayers;
@@ -302,7 +323,7 @@ router.put("/edit-match/:matchId", async (req, res) => {
       type: req.body.type,
       date: matchDate,
       venue: req.body.venue,
-      league : req.body.league,
+      league: req.body.league,
       rating: {
         homeTeamRating: req.body.rating.homeTeamRating,
         awayTeamRating: req.body.rating.awayTeamRating,
@@ -311,64 +332,66 @@ router.put("/edit-match/:matchId", async (req, res) => {
         team: req.body.homeTeam.team,
         score: req.body.homeTeam.score,
         players: req.body.homeTeam.players,
-        ratingChange: homeRatingChange
+        ratingChange: homeRatingChange,
       },
       awayTeam: {
         team: req.body.awayTeam.team,
         score: req.body.awayTeam.score,
         players: req.body.awayTeam.players,
-        ratingChange: awayRatingChange
+        ratingChange: awayRatingChange,
       },
-      odds: req.body.odds
+      odds: req.body.odds,
     };
 
     // console.log('Prepared update data:', JSON.stringify(updatedMatchData, null, 2));
 
     // 8. Update Player Ratings
     // console.log('Updating player ratings');
-    
+
     // Remove ratings for deselected players
     await Promise.all([
-      ...homeTeamDeselectedPlayers.map(playerId => 
+      ...homeTeamDeselectedPlayers.map((playerId) =>
         Player.findByIdAndUpdate(playerId, {
-          $pull: { ratingHistory: { matchId: matchId } }
+          $pull: { ratingHistory: { matchId: matchId } },
         })
       ),
-      ...awayTeamDeselectedPlayers.map(playerId => 
+      ...awayTeamDeselectedPlayers.map((playerId) =>
         Player.findByIdAndUpdate(playerId, {
-          $pull: { ratingHistory: { matchId: matchId } }
+          $pull: { ratingHistory: { matchId: matchId } },
         })
-      )
+      ),
     ]);
 
     // Update ratings for current players
     const updatePlayerRatings = async (players, ratingChange) => {
       return Promise.all(
-        players.filter(p => p.starter).map(async ({ player: playerId }) => {
-          const ratingHistoryEntry = {
-            date: matchDate,
-            newRating: ratingChange,
-            type: "match",
-            matchId: matchId
-          };
+        players
+          .filter((p) => p.starter)
+          .map(async ({ player: playerId }) => {
+            const ratingHistoryEntry = {
+              date: matchDate,
+              newRating: ratingChange,
+              type: "match",
+              matchId: matchId,
+            };
 
-          // Remove any existing rating for this match before adding the new one
-          await Player.findByIdAndUpdate(playerId, {
-            $pull: { ratingHistory: { matchId: matchId } }
-          });
+            // Remove any existing rating for this match before adding the new one
+            await Player.findByIdAndUpdate(playerId, {
+              $pull: { ratingHistory: { matchId: matchId } },
+            });
 
-          return Player.findByIdAndUpdate(
-            playerId,
-            { $push: { ratingHistory: ratingHistoryEntry } },
-            { new: true }
-          );
-        })
+            return Player.findByIdAndUpdate(
+              playerId,
+              { $push: { ratingHistory: ratingHistoryEntry } },
+              { new: true }
+            );
+          })
       );
     };
 
     await Promise.all([
       updatePlayerRatings(req.body.homeTeam.players, homeRatingChange),
-      updatePlayerRatings(req.body.awayTeam.players, awayRatingChange)
+      updatePlayerRatings(req.body.awayTeam.players, awayRatingChange),
     ]);
 
     // 9. Update Match
@@ -378,18 +401,18 @@ router.put("/edit-match/:matchId", async (req, res) => {
       updatedMatchData,
       { new: true, runValidators: true }
     )
-    .populate({
-      path: "homeTeam.team",
-      select: "name country type",
-      refPath: "type"
-    })
-    .populate({
-      path: "awayTeam.team",
-      select: "name country type",
-      refPath: "type"
-    })
-    .populate("homeTeam.players.player", "name position")
-    .populate("awayTeam.players.player", "name position");
+      .populate({
+        path: "homeTeam.team",
+        select: "name country type",
+        refPath: "type",
+      })
+      .populate({
+        path: "awayTeam.team",
+        select: "name country type",
+        refPath: "type",
+      })
+      .populate("homeTeam.players.player", "name position")
+      .populate("awayTeam.players.player", "name position");
 
     // console.log('✅ Match updated successfully');
 
@@ -398,16 +421,18 @@ router.put("/edit-match/:matchId", async (req, res) => {
       ...updatedMatch.toObject(),
       homeTeam: {
         ...updatedMatch.homeTeam,
-        teamName: updatedMatch.type === "ClubTeam"
-          ? updatedMatch.homeTeam.team?.name
-          : `${updatedMatch.homeTeam.team?.country} ${updatedMatch.homeTeam.team?.type}`
+        teamName:
+          updatedMatch.type === "ClubTeam"
+            ? updatedMatch.homeTeam.team?.name
+            : `${updatedMatch.homeTeam.team?.country} ${updatedMatch.homeTeam.team?.type}`,
       },
       awayTeam: {
         ...updatedMatch.awayTeam,
-        teamName: updatedMatch.type === "ClubTeam"
-          ? updatedMatch.awayTeam.team?.name
-          : `${updatedMatch.awayTeam.team?.country} ${updatedMatch.awayTeam.team?.type}`
-      }
+        teamName:
+          updatedMatch.type === "ClubTeam"
+            ? updatedMatch.awayTeam.team?.name
+            : `${updatedMatch.awayTeam.team?.country} ${updatedMatch.awayTeam.team?.type}`,
+      },
     };
 
     // 11. Send Response
@@ -417,31 +442,30 @@ router.put("/edit-match/:matchId", async (req, res) => {
       match: transformedMatch,
       ratingChanges: {
         home: homeRatingChange,
-        away: awayRatingChange
-      }
+        away: awayRatingChange,
+      },
     });
-
   } catch (error) {
-    console.error('❌ Error in edit-match:', error);
-    console.error('Error details:', {
+    console.error("❌ Error in edit-match:", error);
+    console.error("Error details:", {
       name: error.name,
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
-    if (error.name === 'ValidationError') {
-      console.log('Validation error details:', error.errors);
+    if (error.name === "ValidationError") {
+      console.log("Validation error details:", error.errors);
       return res.status(400).json({
         success: false,
-        message: 'Validation error',
-        error: error.message
+        message: "Validation error",
+        error: error.message,
       });
     }
 
     return res.status(500).json({
       success: false,
-      message: 'Error updating match',
-      error: error.message
+      message: "Error updating match",
+      error: error.message,
     });
   }
 });
@@ -570,7 +594,7 @@ router.post("/matches", async (req, res) => {
         awayTeamRating: req.body.rating.awayTeamRating,
       },
       venue: req.body.venue.trim(),
-      league : req.body.league.trim(),
+      league: req.body.league.trim(),
       homeTeam: {
         team: req.body.homeTeam.team,
         score: req.body.homeTeam.score,
@@ -707,9 +731,7 @@ router.get("/get-all-matches", async (req, res) => {
     }
 
     const matches = await Match.find({
-      $or: [
-        { "homeTeam.team": teamId },
-        { "awayTeam.team": teamId }],
+      $or: [{ "homeTeam.team": teamId }, { "awayTeam.team": teamId }],
     });
 
     return res.status(200).json({

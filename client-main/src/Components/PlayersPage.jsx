@@ -111,6 +111,10 @@ const PlayersPage = () => {
     }
   };
 
+  const handleNavigateMatch = (player) => {    
+    navigate(`/matches?player=${player._id}`);
+  }
+
   if (isLoading) return <Loader />;
   if (error) return <div>Error fetching players data</div>;
 
@@ -132,6 +136,8 @@ const PlayersPage = () => {
         <PlayersTable 
           players={playersData} 
           onEdit={handleEditPlayer}
+          onNavigateToMatch={handleNavigateMatch}
+          isClub={true}
         />
       </div>
 
