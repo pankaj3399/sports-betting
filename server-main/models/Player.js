@@ -65,7 +65,7 @@ PlayerSchema.pre("findOneAndUpdate", async function (next) {
       pushedEntry.netRating =
         ((1461 - differenceInDays) / 1461) * pushedEntry.newRating;
 
-      if (pushedEntry.netRating < 0) {
+      if (differenceInDays < 0) {
         pushedEntry.netRating = 0;
       }
 
