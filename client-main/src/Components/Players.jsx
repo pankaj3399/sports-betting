@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../Components/ui/select";
-
+ 
 const POSITIONS = [
   "Attacking Midfield",
   "Center Forward",
