@@ -42,7 +42,7 @@ const PlayerSchema = new mongoose.Schema({
     club: { type: mongoose.Schema.Types.ObjectId, ref: "ClubTeam" },
     from: { type: Date },
   },
-  country: { type: String, required: true },
+  country: { type: mongoose.Schema.Types.ObjectId, ref: "Country" },
   nationalTeams: [NationalTeamSchema],
   previousClubs: [PreviousClubSchema],
   ratingHistory: [RatingHistorySchema],
@@ -65,7 +65,7 @@ PlayerSchema.pre("findOneAndUpdate", async function (next) {
       pushedEntry.netRating =
         ((1461 - differenceInDays) / 1461) * pushedEntry.newRating;
 
-      if (pushedEntry.netRating < 0) {
+      if (differenceInDays < 0) {
         pushedEntry.netRating = 0;
       }
 

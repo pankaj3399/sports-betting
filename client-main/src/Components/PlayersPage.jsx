@@ -6,6 +6,8 @@ import { ChevronLeft } from "lucide-react";
 import PlayersTable from './PlayersTable';
 import EditPlayerModal from './EditPlayerModal';
 import Loader from './Loader/Loader';
+import { getActiveClubs } from '../api/Clubs';
+import { getPositions } from '../api/Position';
 
 const PlayersPage = () => {
   const { clubId } = useParams();
@@ -42,6 +44,15 @@ const PlayersPage = () => {
   const { data: countriesData } = useQuery({
     queryKey: ['countries'],
     queryFn: () => getCountries(),
+  });
+
+  const {
+    isLoading: clubsDataLoading,
+    error: clubsDataError,
+    data: clubsData,
+  } = useQuery({
+    queryKey: ["clubs"],
+    queryFn: () => getActiveClubs(),
   });
 
   const editPlayerMutation = useMutation({
@@ -146,7 +157,8 @@ const PlayersPage = () => {
           player={selectedPlayer}
           onClose={() => setShowEditPlayerModal(false)}
           onUpdate={handleUpdatePlayer}
-          clubsData={[]} // You might want to fetch clubs data here
+          clubsData={clubsData} 
+          clubsDataLoading={clubsDataLoading}
           positionsData={positionsData}
           countriesData={countriesData}
         />

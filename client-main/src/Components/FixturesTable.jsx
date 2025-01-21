@@ -10,7 +10,15 @@ import {
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "./ui/button";
 
-const FixturesTable = ({ fixtures, sortOrder, setSortBy, setSortOrder, handleAddMatch, handlePredictMatch }) => {
+const FixturesTable = ({
+  fixtures,
+  sortOrder,
+  setSortBy,
+  setSortOrder,
+  handleAddMatch,
+  handlePredictMatch,
+  onDelete,
+}) => {
   const formatDate = (dateString) => {
     try {
       return new Date(dateString).toLocaleDateString();
@@ -63,13 +71,17 @@ const FixturesTable = ({ fixtures, sortOrder, setSortBy, setSortOrder, handleAdd
                 <TableCell>{fixture.hour}</TableCell>
                 <div className="flex justify-evenly items-center gap-2">
                   <TableCell className="text-center">
-                    {fixture.type === "ClubTeam" ? fixture.homeTeam?.team?.name ?? "" : fixture.homeTeam?.team?.country ?? "" }
+                    {fixture.type === "ClubTeam"
+                      ? fixture.homeTeam?.team?.name ?? ""
+                      : fixture.homeTeam?.team?.country ?? ""}
                   </TableCell>
                   <TableCell className="text-center">
                     {fixture.homeTeam?.rating ?? 0}
                   </TableCell>
                   <TableCell className="text-center">
-                    {fixture.type === "ClubTeam" ? fixture.awayTeam?.team?.name ?? "" : fixture.awayTeam?.team?.country ?? "" }
+                    {fixture.type === "ClubTeam"
+                      ? fixture.awayTeam?.team?.name ?? ""
+                      : fixture.awayTeam?.team?.country ?? ""}
                   </TableCell>
                   <TableCell className="text-center">
                     {fixture.awayTeam?.rating ?? 0}
@@ -80,20 +92,33 @@ const FixturesTable = ({ fixtures, sortOrder, setSortBy, setSortOrder, handleAdd
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex justify-center items-center space-x-2">
-                    <Button onClick={() => handleAddMatch({fixture})} size="sm">Add Match</Button>
-                    <Button onClick={() => handlePredictMatch({fixture})} size="sm">
+                    <Button
+                      onClick={() => handleAddMatch({ fixture })}
+                      size="sm"
+                    >
+                      Add Match
+                    </Button>
+                    <Button
+                      onClick={() => handlePredictMatch({ fixture })}
+                      size="sm"
+                    >
                       Predict
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => onDelete(fixture._id)}
+                      size="sm"
+                    >
+                      Delete
                     </Button>
                   </div>
                 </TableCell>
               </TableRow>
             ))
           ) : (
-            <TableRow>
-              <TableCell className="h-24 text-center">
-                No fixtures found
-              </TableCell>
-            </TableRow>
+            <TableCell className="flex justify-between items-center text-center">
+              No fixtures found
+            </TableCell>
           )}
         </TableBody>
       </Table>

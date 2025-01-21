@@ -29,19 +29,19 @@ module.exports = {
         sortBy = "name",
         sortOrder = "asc",
       } = req.query;
-  
+
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(perPage, 10);
-  
+
       if (pageNum <= 0 || limitNum <= 0) {
         return res
           .status(400)
           .json({ message: "Page and perPage must be positive integers." });
       }
-  
+
       const sortOptions = {};
       sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
-  
+
       const pipeline = [
         {
           $match: {
@@ -56,10 +56,7 @@ module.exports = {
               {
                 $match: {
                   $expr: {
-                    $or: [
-                      { $eq: ["$currentClub.club", "$$clubId"] },
-                      { $in: ["$$clubId", "$previousClubs.name"] },
-                    ],
+                    $eq: ["$currentClub.club", "$$clubId"],
                   },
                 },
               },
@@ -68,9 +65,9 @@ module.exports = {
                   totalRating: {
                     $sum: "$ratingHistory.newRating",
                   },
-                  totalNetRating : {
-                    $sum :"$ratingHistory.netRating",
-                  }
+                  totalNetRating: {
+                    $sum: "$ratingHistory.netRating",
+                  },
                 },
               },
             ],
@@ -88,7 +85,7 @@ module.exports = {
             name: 1,
             _id: 1,
             rating: 1,
-            netRating : 1
+            netRating: 1,
           },
         },
         {
@@ -101,7 +98,7 @@ module.exports = {
           $limit: limitNum,
         },
       ];
-  
+
       const totalPipeline = [
         {
           $match: {
@@ -112,14 +109,14 @@ module.exports = {
           $count: "total",
         },
       ];
-  
+
       const [clubs, totalResult] = await Promise.all([
         Club.aggregate(pipeline),
         Club.aggregate(totalPipeline),
       ]);
-  
+
       const total = totalResult[0]?.total || 0;
-  
+
       return res.status(200).json({
         clubs,
         total,
@@ -131,8 +128,7 @@ module.exports = {
         .status(400)
         .json({ message: "Error fetching clubs", error: error.message });
     }
-  }
-,  
+  },
   async fetchAllActive(req, res) {
     try {
       const clubs = await Club.find({ status: "Active" }).sort("name");
@@ -214,8 +210,8 @@ module.exports = {
       }
 
       const players = await Player.find(query)
-        .populate("position")
         .populate("country")
+        .populate("position")
         .sort("name");
 
       // console.log(`Backend: Found ${players.length} players for club ${clubId}`);

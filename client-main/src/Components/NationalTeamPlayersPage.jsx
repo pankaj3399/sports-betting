@@ -1,13 +1,14 @@
-
-import React from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useParams, useNavigate } from 'react-router-dom';
+import React from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../Components/ui/button";
 import { ChevronLeft } from "lucide-react";
-import PlayersTable from './PlayersTable';
-import EditPlayerModal from './EditPlayerModal';
-import Loader from './Loader/Loader';
-import { getNationalTeamPlayers } from '../api/Country';
+import PlayersTable from "./PlayersTable";
+import EditPlayerModal from "./EditPlayerModal";
+import Loader from "./Loader/Loader";
+import { getCountries, getNationalTeamPlayers } from "../api/Country";
+import { getPositions } from "../api/Position";
+import { getActiveClubs } from "../api/Clubs";
 
 const NationalTeamPlayersPage = () => {
   const { teamId } = useParams();
@@ -16,29 +17,44 @@ const NationalTeamPlayersPage = () => {
   const [selectedPlayer, setSelectedPlayer] = React.useState(null);
   const queryClient = useQueryClient();
 
-  const { data: playersData, isLoading, error } = useQuery({
-    queryKey: ['nationalTeamPlayers', teamId],
-    queryFn: () => getNationalTeamPlayers(teamId)
+  const {
+    data: playersData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["nationalTeamPlayers", teamId],
+    queryFn: () => getNationalTeamPlayers(teamId),
   });
 
+  const {
+    isLoading: clubsDataLoading,
+    error: clubsDataError,
+    data: clubsData,
+  } = useQuery({
+    queryKey: ["clubs"],
+    queryFn: getActiveClubs,
+  });
+  
   const { data: positionsData } = useQuery({
-    queryKey: ['positions'],
+    queryKey: ["positions"],
     queryFn: () => getPositions(),
   });
 
   const { data: countriesData } = useQuery({
-    queryKey: ['countries'],
+    queryKey: ["countries"],
     queryFn: () => getCountries(),
   });
 
   const editPlayerMutation = useMutation({
     mutationFn: async (playerData) => {
-      const url = `${import.meta.env.VITE_REACT_APP_API_URL}/api/player/players/${playerData._id}`;
+      const url = `${
+        import.meta.env.VITE_REACT_APP_API_URL
+      }/api/player/players/${playerData._id}`;
       const response = await fetch(url, {
         method: "PUT",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          Accept: "application/json",
         },
         body: JSON.stringify(playerData),
       });
@@ -50,7 +66,7 @@ const NationalTeamPlayersPage = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['nationalTeamPlayers', teamId]);
+      queryClient.invalidateQueries(["nationalTeamPlayers", teamId]);
       setShowEditPlayerModal(false);
       setSelectedPlayer(null);
     },
@@ -71,27 +87,33 @@ const NationalTeamPlayersPage = () => {
         position: updatedPlayerData.position,
         country: updatedPlayerData.country,
         rating: updatedPlayerData.rating || 1,
-        currentClub: updatedPlayerData.currentClub?.club ? {
-          club: updatedPlayerData.currentClub.club,
-          from: new Date(updatedPlayerData.currentClub.from).toISOString()
-        } : null,
+        currentClub: updatedPlayerData.currentClub?.club
+          ? {
+              club: updatedPlayerData.currentClub.club,
+              from: new Date(updatedPlayerData.currentClub.from).toISOString(),
+            }
+          : null,
         previousClubs: updatedPlayerData.previousClubs
-          .filter(club => club.name)
-          .map(club => ({
+          .filter((club) => club.name)
+          .map((club) => ({
             name: club.name,
             from: new Date(club.from).toISOString(),
-            to: new Date(club.to).toISOString()
+            to: new Date(club.to).toISOString(),
           })),
         nationalTeams: updatedPlayerData.nationalTeams
-          .filter(team => team.name && team.type)
-          .map(team => ({
+          .filter((team) => team.name && team.type)
+          .map((team) => ({
             name: team.name,
             type: team.type,
             from: new Date(team.from).toISOString(),
-            to: team.currentlyPlaying ? null : team.to ? new Date(team.to).toISOString() : null
-          }))
+            to: team.currentlyPlaying
+              ? null
+              : team.to
+              ? new Date(team.to).toISOString()
+              : null,
+          })),
       };
-      
+
       editPlayerMutation.mutate(cleanedData);
     } catch (error) {
       console.error("Error preparing data:", error);
@@ -100,11 +122,11 @@ const NationalTeamPlayersPage = () => {
 
   if (isLoading) return <Loader />;
   if (error) return <div>Error fetching players data</div>;
-
+  
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center gap-4">
-        <Button 
+        <Button
           onClick={() => navigate(-1)}
           variant="outline"
           className="flex items-center gap-2"
@@ -116,23 +138,27 @@ const NationalTeamPlayersPage = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow">
-        <PlayersTable 
-          players={playersData} 
+        <PlayersTable
+          players={playersData}
           onEdit={handleEditPlayer}
           isClub={false}
         />
       </div>
 
-      {showEditPlayerModal && selectedPlayer && positionsData && countriesData && (
-        <EditPlayerModal
-          player={selectedPlayer}
-          onClose={() => setShowEditPlayerModal(false)}
-          onUpdate={handleUpdatePlayer}
-          clubsData={[]} 
-          positionsData={positionsData}
-          countriesData={countriesData}
-        />
-      )}
+      {showEditPlayerModal &&
+        selectedPlayer &&
+        positionsData &&
+        countriesData && (
+          <EditPlayerModal
+            player={selectedPlayer}
+            onClose={() => setShowEditPlayerModal(false)}
+            onUpdate={handleUpdatePlayer}
+            clubsData={clubsData}
+            clubsDataLoading={clubsDataLoading}
+            positionsData={positionsData}
+            countriesData={countriesData}
+          />
+        )}
     </div>
   );
 };

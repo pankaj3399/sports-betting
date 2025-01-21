@@ -3,8 +3,9 @@ import MatchLineup from "./MatchLineup";
 import { Dialog, DialogContent } from "../Components/ui/dialog";
 import { PencilIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "./ui/button";
 
-const MatchesTable = ({ matches }) => {
+const MatchesTable = ({ matches, onDelete }) => {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [showLineup, setShowLineup] = useState(false);
   const navigate = useNavigate();
@@ -113,10 +114,16 @@ const MatchesTable = ({ matches }) => {
               <td className="border-b p-2">
                 <div className="text-gray-600">{formatOdds(match?.odds)}</div>
               </td>
-              <td className="border-b p-2 hover:underline cursor-pointer">
+              <td className="border-b flex items-center gap-5 p-2">
+                <Button
+                  onClick={async () => await onDelete(match._id)}
+                  variant="destructive"
+                >
+                  Delete
+                </Button>
                 <div
                   onClick={() => navigate(`/match/edit/${match._id}`)}
-                  className="text-gray-600 flex items-center gap-1.5"
+                  className="text-gray-600 flex items-center gap-1.5 hover:underline cursor-pointer"
                 >
                   <span>Edit</span>
                   <PencilIcon size={20} />

@@ -84,6 +84,13 @@ const AddPlayer = () => {
         }));
     };
 
+    const handleRemovePreviousClub = () => {
+        setPlayer(prev => ({
+            ...prev,
+            previousClubs: prev.previousClubs.slice(0, -1) 
+        }));
+    };
+
     const handleAddNationalTeam = () => {
         console.log('Adding new national team');
         setPlayer(prev => ({
@@ -97,6 +104,13 @@ const AddPlayer = () => {
                 disabled: true,
                 currentlyPlaying: false 
             }]
+        }));
+    };
+
+    const handleRemoveNationalTeam = () => {
+        setPlayer(prev => ({
+            ...prev,
+            nationalTeams: prev.nationalTeams.slice(0,-1)
         }));
     };
 
@@ -402,6 +416,13 @@ const AddPlayer = () => {
                 >
                     Add National Team
                 </Button>
+                <Button
+                    type="button"
+                    className="ml-2"
+                    onClick={handleRemoveNationalTeam}
+                >
+                    Remove National Team
+                </Button>
             </div>
 
             <div>
@@ -449,6 +470,13 @@ const AddPlayer = () => {
                     className="mt-2"
                 >
                     Add Previous Club
+                </Button>
+                <Button
+                    type="button"
+                    onClick={handleRemovePreviousClub}
+                    className="ml-2 mt-2"
+                >
+                    Remove Previous Club
                 </Button>
             </div>
 

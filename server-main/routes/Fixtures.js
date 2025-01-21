@@ -26,7 +26,7 @@ router.get("/get-all-fixtures", async (req, res) => {
           { "homeTeam.team.name": { $regex: search, $options: "i" } },
           { "awayTeam.team.name": { $regex: search, $options: "i" } },
           { "homeTeam.team.country": { $regex: search, $options: "i" } },
-          { "awayTeam.team.country": { $regex: search, $options: "i" } },
+          { "awayTeam.team.country": { $regex: search, $options: "i" } }
         );
       }
     }
@@ -173,7 +173,6 @@ router.get("/get-all-fixtures", async (req, res) => {
         },
       },
     ];
-    
 
     const aggregatePipeline = [
       ...basePipeline,
@@ -248,6 +247,36 @@ router.post("/add-fixture", async (req, res) => {
     return res.status(201).json({
       message: "Fixture Successfully Added",
       fixture: newFixture,
+    });
+  } catch (error) {
+    console.error(error.message);
+    return res.status(500).json({
+      message: "Failed to create match",
+      error: error.message,
+    });
+  }
+});
+
+router.delete("/delete-fixture", async (req, res) => {
+  try {
+    const fixtureId = req.query.fixtureId;
+
+    if (!fixtureId) {
+      return res.status(400).json({
+        message: "Fixture Id not found",
+      });
+    }
+
+    const fixture = await Fixture.findByIdAndDelete(fixtureId);
+
+    if (!fixture) {
+      return res.status(404).json({
+        message: "Fixture Not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Fixture Successfully Deleted",
     });
   } catch (error) {
     console.error(error.message);
