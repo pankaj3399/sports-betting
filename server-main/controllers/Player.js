@@ -235,6 +235,9 @@ module.exports = {
         search = "",
         sortBy = "name",
         sortOrder = "asc",
+        filter,
+        ageGroup = null,
+        position = null,
       } = req.query;
 
       const pageNum = parseInt(page, 10);
@@ -242,16 +245,45 @@ module.exports = {
 
       let sortField = sortBy;
       if (sortBy === "club") {
-        sortField = "clubDetails.name"; 
+        sortField = "clubDetails.name";
       }
 
       const sortOptions = {};
       sortOptions[sortField] = sortOrder === "asc" ? 1 : -1;
 
+      const matchConditions = {
+        name: { $regex: search, $options: "i" },
+      };
+
+      if (filter === "true") {
+        const ageGroupMap = {
+          under20: { $lt: 20 },
+          under22: { $lt: 22 },
+          under26: { $lt: 26 },
+          under30: { $lt: 30 },
+        };
+
+        if (ageGroup && ageGroupMap[ageGroup]) {
+          matchConditions.age = ageGroupMap[ageGroup];
+        }
+
+        if (position) {
+          matchConditions["positionDetails.position"] =
+            decodeURIComponent(position);
+        }
+      }
+
       const pipeline = [
         {
-          $match: {
-            name: { $regex: search, $options: "i" },
+          $addFields: {
+            age: {
+              $floor: {
+                $divide: [
+                  { $subtract: [new Date(), "$dateOfBirth"] },
+                  365 * 24 * 60 * 60 * 1000,
+                ],
+              },
+            },
           },
         },
         {
@@ -261,13 +293,6 @@ module.exports = {
                 input: "$ratingHistory",
                 initialValue: 0,
                 in: { $add: ["$$value", "$$this.newRating"] },
-              },
-            },
-            netRating: {
-              $reduce: {
-                input: "$ratingHistory",
-                initialValue: 0,
-                in: { $add: ["$$value", "$$this.netRating"] },
               },
             },
           },
@@ -280,13 +305,7 @@ module.exports = {
             as: "clubDetails",
           },
         },
-        {
-          $unwind: {
-            path: "$clubDetails",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-
+        { $unwind: { path: "$clubDetails", preserveNullAndEmptyArrays: true } },
         {
           $lookup: {
             from: "positions",
@@ -302,51 +321,59 @@ module.exports = {
           },
         },
         {
+          $match: matchConditions,
+        },
+        { $sort: sortOptions },
+        { $skip: (pageNum - 1) * limitNum },
+        { $limit: limitNum },
+      ];
+      
+      const totalPipeline = [
+        {
+          $addFields: {
+            age: {
+              $floor: {
+                $divide: [
+                  { $subtract: [new Date(), "$dateOfBirth"] },
+                  365 * 24 * 60 * 60 * 1000,
+                ],
+              },
+            },
+          },
+        },
+        {
           $lookup: {
-            from: "countries",
-            localField: "country",
+            from: "positions",
+            localField: "position",
             foreignField: "_id",
-            as: "countryDetails",
+            as: "positionDetails",
           },
         },
         {
           $unwind: {
-            path: "$countryDetails",
+            path: "$positionDetails",
             preserveNullAndEmptyArrays: true,
           },
         },
         {
-          $sort: sortOptions,
-        },
-        {
-          $skip: (pageNum - 1) * limitNum,
-        },
-        {
-          $limit: limitNum,
-        },
-      ];
-
-      const totalPipeline = [
-        {
-          $match: {
-            name: { $regex: search, $options: "i" },
-          },
+          $match: matchConditions,
         },
         {
           $count: "total",
         },
-      ];
+      ];  
 
-      const [players, totalResult] = await Promise.all([
+      const [players, totalPlayers] = await Promise.all([
         Player.aggregate(pipeline),
         Player.aggregate(totalPipeline),
       ]);
+      
 
-      const total = totalResult[0]?.total || 0;
+      const total = totalPlayers[0]?.total;
 
       return res.status(200).json({
         players,
-        total,
+        total: total,
         page: pageNum,
         perPage: limitNum,
       });

@@ -6,3 +6,14 @@ export const fetchMatches = async ({page,search,teamName,playerId}) => {
   );
   return data;
 };
+
+
+export const deleteMatch = async (matchId) => {
+  const { data } = await axios.delete(`/match/delete-match?matchId=${matchId}`);
+  return data;
+}
+
+export const deleteOldMatches = async () => {
+  const { data } = await axios.delete(`/match/delete-old-matches`);
+  return data;
+}

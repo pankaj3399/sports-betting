@@ -5,6 +5,7 @@ const Player = require("../models/Player");
 const ClubTeam = require("../models/ClubTeam");
 const NationalTeam = require("../models/NationalTeams");
 const { default: mongoose } = require("mongoose");
+const Fixture = require("../models/Fixtures");
 // Helper functions for rating calculations
 const calculateExpectedPoints = (odds) => {
   const winProb = odds.homeWin;
@@ -688,6 +689,12 @@ router.post("/matches", async (req, res) => {
       },
     };
 
+    await Fixture.findOneAndDelete({
+      date: match.date,
+      venue: match.venue,
+      league: match.league,
+    });
+
     // 13. Send Response
     res.status(201).json({
       match: transformedMatch,
@@ -818,6 +825,102 @@ router.get("/check-team-availability", async (req, res) => {
     console.error("Error checking team availability:", error);
     return res.status(500).json({
       message: "Error checking team availability",
+      error: error.message,
+    });
+  }
+});
+
+router.delete("/delete-match", async (req, res) => {
+  try {
+    const matchId = req.query.matchId;
+    if (!matchId) {
+      return res.status(400).json({
+        message: "Match Id not found!",
+      });
+    }
+
+    const match = await Match.findById(matchId);
+
+    if (!match) {
+      return res.status(403).json({
+        message: "Match Not found!",
+      });
+    }
+
+    const updates = [
+      ...match.homeTeam.players.map((playerId) =>
+        Player.findByIdAndUpdate(playerId, {
+          $pull: { ratingHistory: { matchId } },
+        })
+      ),
+      ...match.awayTeam.players.map((playerId) =>
+        Player.findByIdAndUpdate(playerId, {
+          $pull: { ratingHistory: { matchId } },
+        })
+      ),
+    ];
+
+    await Promise.all(updates);
+
+    await Match.deleteOne({
+      _id: match._id,
+    });
+
+    return res.status(200).json({
+      message: "Match Successfully Deleted",
+    });
+  } catch (error) {
+    console.error("Error checking team availability:", error);
+    return res.status(500).json({
+      message: "Error checking team availability",
+      error: error.message,
+    });
+  }
+});
+
+router.delete("/delete-old-matches", async (req, res) => {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 1461);
+
+    const oldMatches = await Match.find({ date: { $lt: cutoffDate } });
+
+    if (oldMatches.length === 0) {
+      return res.status(200).json({
+        message: "No old matches to delete",
+      });
+    }
+
+    const oldMatchIds = oldMatches.map((match) => match._id);
+
+    await Promise.all([
+      ...oldMatches.flatMap((match) =>
+        match.homeTeam.players.map((playerId) =>
+          Player.findByIdAndUpdate(playerId, {
+            $pull: { ratingHistory: { matchId: match._id } },
+          })
+        )
+      ),
+      ...oldMatches.flatMap((match) =>
+        match.awayTeam.players.map((playerId) =>
+          Player.findByIdAndUpdate(playerId, {
+            $pull: { ratingHistory: { matchId: match._id } },
+          })
+        )
+      ),
+    ]);
+
+    await Match.deleteMany({ _id: { $in: oldMatchIds } });
+
+    return res.status(200).json({
+      message: `${oldMatches.length} old ${
+        oldMatches.length === 1 ? "match" : "matches"
+      } successfully deleted`,
+    });
+  } catch (error) {
+    console.error("Error deleting old matches:", error);
+    return res.status(500).json({
+      message: "Internal server error",
       error: error.message,
     });
   }

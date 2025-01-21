@@ -42,7 +42,7 @@ const PlayerSchema = new mongoose.Schema({
     club: { type: mongoose.Schema.Types.ObjectId, ref: "ClubTeam" },
     from: { type: Date },
   },
-  country: { type: String, required: true },
+  country: { type: mongoose.Schema.Types.ObjectId, ref: "Country" },
   nationalTeams: [NationalTeamSchema],
   previousClubs: [PreviousClubSchema],
   ratingHistory: [RatingHistorySchema],

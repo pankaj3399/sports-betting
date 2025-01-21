@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
 import { useLocation, useNavigate } from "react-router-dom";
 import MatchesTable from "./MatchesTable";
 import Loader from "./Loader/Loader";
-import { fetchMatches } from "../api/Match";
+import { deleteMatch, deleteOldMatches, fetchMatches } from "../api/Match";
+import { toast } from "../hooks/use-toast";
 
 const Matches = () => {
   const navigate = useNavigate();
@@ -16,11 +17,43 @@ const Matches = () => {
   const queryParams = new URLSearchParams(location.search);
   const teamName = decodeURIComponent(queryParams.get("team") ?? "");
   const playerId = decodeURIComponent(queryParams.get("player") ?? "");
-
+  const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ["matches", page, searchDebounce, teamName, playerId],
     queryFn: () => fetchMatches({ page, search, teamName, playerId }),
   });
+
+  const { mutateAsync : handleDeleteMatch} = useMutation({
+    mutationKey : ['delete-match'],
+    mutationFn : deleteMatch,
+    onSuccess : () => {
+      queryClient.invalidateQueries('matches');
+      toast({
+        title : "Match Successfully Deleted"
+      });
+    },
+    onError : (e) => {      
+      toast({
+        title : e.message
+      })
+    }
+  })
+
+  const { mutateAsync : handleDeleteOldMatches} = useMutation({
+    mutationKey : ['delete-old-matches'],
+    mutationFn : deleteOldMatches,
+    onSuccess : (data) => {
+      queryClient.invalidateQueries('matches');
+      toast({
+        title : data?.message ?? "Old Matches Successfully Deleted"
+      });
+    },
+    onError : (e) => {      
+      toast({
+        title : e.message
+      })
+    }
+  })
 
   useEffect(() => {
     const timeOutId = setTimeout(() => {
@@ -56,10 +89,14 @@ const Matches = () => {
             className="w-64"
           />
         </div>
-        <Button onClick={() => navigate("/matches/add")}>Add Match</Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => navigate("/matches/add")}>Add Match</Button>
+          <Button variant="destructive" onClick={handleDeleteOldMatches}>Delete Old Matches</Button>
+
+        </div>
       </div>
 
-      {isLoading ? <Loader /> : <MatchesTable matches={data.matches} />}
+      {isLoading ? <Loader /> : <MatchesTable matches={data.matches} onDelete={handleDeleteMatch} />}
 
       <div className="flex justify-center items-center gap-4 mt-6">
         <Button

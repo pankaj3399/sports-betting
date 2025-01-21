@@ -165,7 +165,7 @@ module.exports = {
             $or: [{ to: null }, { to: { $gt: date } }],
           },
         },
-      }).lean();
+      }).populate('country').populate('position');
 
       // console.log(`Found ${players.length} players for ${nationalTeam.country} ${nationalTeam.type}`);
 

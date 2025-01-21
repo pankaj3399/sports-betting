@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
 import Loader from "./Loader/Loader";
 import { useNavigate } from "react-router-dom";
-import { getFixtures } from "../api/Fixtures";
+import { deleteFixture, getFixtures } from "../api/Fixtures";
 import FixturesTable from "./FixturesTable";
+import { toast } from "../hooks/use-toast";
 
 const FixturesPage = () => {
   const navigate = useNavigate();
@@ -14,11 +15,27 @@ const FixturesPage = () => {
   const [searchDebounce, setSearchDebounce] = useState("");
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("asc");
-
+  const queryClient = useQueryClient();
   const { isLoading, error, data } = useQuery({
     queryKey: ["fixtures", page, searchDebounce, sortBy, sortOrder],
     queryFn: () => getFixtures({ page, search, sortBy, sortOrder }),
   });
+
+  const { mutateAsync : handleDeleteFixture } = useMutation({
+    mutationKey : ['delete-fixture'],
+    mutationFn : deleteFixture,
+    onSuccess : () => {
+      toast({
+        title : "Fixture Successfully Deleted"
+      });
+      queryClient.invalidateQueries(['fixtures']);
+    },
+    onError : (e) => {
+      toast({
+        title : e.message
+      })
+    }
+  })
 
   useEffect(() => {
     const timeOutId = setTimeout(() => {
@@ -32,7 +49,7 @@ const FixturesPage = () => {
       matchType: fixture.type,
       date: fixture.date,
       venue: fixture.venue,
-      league: fixture.league // Fixed typo: was fixture.venue
+      league: fixture.league
     };
   
     let params;
@@ -113,6 +130,7 @@ const FixturesPage = () => {
             sortOrder={sortOrder}
             handleAddMatch={handleAddMatch}
             handlePredictMatch={handlePredictMatch}
+            onDelete={handleDeleteFixture}
           />
         </div>
       )}
