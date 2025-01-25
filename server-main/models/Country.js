@@ -11,6 +11,8 @@ const countrySchema = new mongoose.Schema({
         required: true,
         enum: ['Active', 'Inactive']
     },
+},{
+    collection: 'countries'
 });
 
 const Country = mongoose.model('Country', countrySchema);

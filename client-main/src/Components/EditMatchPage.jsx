@@ -33,7 +33,7 @@ const TeamSelector = ({
     const fetchNationalTeams = async () => {
       if (selectedCountry?.value) {
         try {
-          const teams = await getNationalTeams(selectedCountry.value);
+          const teams = await getNationalTeams(selectedCountry.label);
           setNationalTeams(teams);
         } catch (error) {
           console.error("Error fetching national teams:", error);
@@ -68,12 +68,13 @@ const TeamSelector = ({
         value={selectedCountry}
         onChange={(selected) => {
           setSelectedCountry(selected);
-          onTeamChange(null);
+          // onTeamChange(null);
+          onTeamChange
         }}
         options={
           countriesData?.map((country) => ({
-            label: typeof country === "string" ? country : country.country,
-            value: typeof country === "string" ? country : country.country,
+            label: country.name,
+            value: country._id,
           })) || []
         }
         placeholder="Select Country"
@@ -150,15 +151,17 @@ const EditMatchPage = () => {
     queryKey: ["countries"],
     queryFn: getCountries,
     enabled: matchType === "NationalTeam",
-    select: (data) =>
-      data.map((country) =>
-        typeof country === "string" ? country : country.country
-      ),
+    // select: (data) =>
+    //   data.map((country) =>
+    //     typeof country === "string" ? country : country.country
+    //   ),
   });
 
   const handleTeamChange = (selected, isHome) => {
+    console.log(selected);
+    
     const teamKey = isHome ? "homeTeam" : "awayTeam";
-    console.log(matchData);
+    console.log(selected);
     setMatchData((prev) => ({
       ...prev,
       [teamKey]: {
@@ -466,8 +469,6 @@ const EditMatchPage = () => {
         date: formattedDate,
         type,
       });
-
-      console.log(queryParams);
 
       const response = await fetch(
         `${
