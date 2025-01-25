@@ -24,9 +24,11 @@ export const TeamSelector = ({
   setNationalTeams,
 }) => {
   useEffect(() => {
+    console.log(selectedCountry);
+    
     const fetchNationalTeams = async () => {
       try {
-        const teams = await getNationalTeams(selectedCountry.value);
+        const teams = await getNationalTeams(selectedCountry.label);
         setNationalTeams(teams);
       } catch (error) {
         console.error("Error fetching national teams:", error);
@@ -37,6 +39,9 @@ export const TeamSelector = ({
       fetchNationalTeams();
     }
   }, [selectedCountry, matchType, setNationalTeams]);
+
+  console.log(nationalTeams);
+  
 
   if (matchType === "ClubTeam") {
     return (
@@ -64,8 +69,8 @@ export const TeamSelector = ({
         }}
         options={
           countriesData?.map((country) => ({
-            label: typeof country === "string" ? country : country.country,
-            value: typeof country === "string" ? country : country.country,
+            label: country.name,
+            value: country._id,
           })) || []
         }
         placeholder="Select Country"
@@ -121,10 +126,10 @@ const AddFixture = () => {
     queryKey: ["countries"],
     queryFn: getCountries,
     enabled: matchType === "NationalTeam",
-    select: (data) =>
-      data.map((country) =>
-        typeof country === "string" ? country : country.country
-      ),
+    // select: (data) =>
+    //   data.map((country) =>
+    //     typeof country === "string" ? country : country.country
+    //   ),
   });
 
   const handleTeamChange = (selected, isHome) => {

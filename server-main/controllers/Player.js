@@ -308,6 +308,15 @@ module.exports = {
         { $unwind: { path: "$clubDetails", preserveNullAndEmptyArrays: true } },
         {
           $lookup: {
+            from: "countries",
+            localField: "country",
+            foreignField: "_id",
+            as: "countryDetails",
+          },
+        },
+        { $unwind: { path: "$countryDetails", preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
             from: "positions",
             localField: "position",
             foreignField: "_id",

@@ -205,7 +205,7 @@ const EditPlayerModal = ({
   };
   // When selecting a country
   const handleCountrySelect = (option, index) => {
-    handleNationalTeamChange(index, "name", option.value);
+    handleNationalTeamChange(index, "name", option.label);
     // Ensure from date is set
     if (!editedPlayer.nationalTeams[index].from) {
       handleNationalTeamChange(
@@ -348,13 +348,8 @@ const EditPlayerModal = ({
                     options={
                       countriesData?.map((country) => ({
                         label:
-                          typeof country === "string"
-                            ? country
-                            : country.country,
-                        value:
-                          typeof country === "string"
-                            ? country
-                            : country.country,
+                          country.name,
+                        value:country._id,
                       })) || []
                     }
                     placeholder="Select Country"

@@ -7,22 +7,23 @@ module.exports = {
     try {
       const countries = await Country.find();
       // Just send the country names array
-      const countryNames = countries.map((country) => country.country);
-      return res.status(200).send(countryNames);
+      const countryNamesWithId = countries.map((country) => ({ name: country.country, _id: country._id }));
+      return res.status(200).send(countryNamesWithId);
+
     } catch (error) {
       return res.status(400).send(error);
     }
   },
 
   async fetchAllNationalTeamsByCountry(req, res) {
-      try {
-          const { country } = req.query;
-          const nationalTeams = await NationalTeam.find({ country })
-              .select('country type _id'); // Only select needed fields
-          return res.status(200).send(nationalTeams);
-      } catch (error) {
-          return res.status(400).send(error);
-      }
+    try {
+      const { country } = req.query;
+      const nationalTeams = await NationalTeam.find({ country })
+        .select('country type _id'); // Only select needed fields
+      return res.status(200).send(nationalTeams);
+    } catch (error) {
+      return res.status(400).send(error);
+    }
   },
 
   async fetchAllNationalTeams(req, res) {
@@ -85,7 +86,7 @@ module.exports = {
         {
           $addFields: {
             rating: { $sum: "$players.totalRating" },
-            netRating : { $sum : "$players.totalNetRating"},
+            netRating: { $sum: "$players.totalNetRating" },
           },
         },
         {
@@ -94,7 +95,7 @@ module.exports = {
             type: 1,
             _id: 1,
             rating: 1,
-            netRating : 1
+            netRating: 1
           },
         },
         {

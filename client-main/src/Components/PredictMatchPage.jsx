@@ -3,14 +3,93 @@ import { Button } from "./ui/button";
 import { useToast } from "../hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { getActiveClubs } from "../api/Clubs";
-import { getCountries } from "../api/Country";
+import { getCountries, getNationalTeams } from "../api/Country";
 import { Card, CardContent, CardTitle } from "./ui/card";
 import { Label } from "@radix-ui/react-label";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Input } from "./ui/input";
-import { PlayerList, TeamSelector } from "./AddMatch";
+import { PlayerList } from "./AddMatch";
 import { useLocation } from "react-router-dom";
+import Select from "react-select";
 
+const TeamSelector = ({
+  isHome,
+  matchType,
+  selectedTeam,
+  onTeamChange,
+  clubsData,
+  countriesData,
+  selectedCountry,
+  setSelectedCountry,
+  nationalTeams,
+  setNationalTeams,
+}) => {
+  useEffect(() => {
+    const fetchNationalTeams = async () => {
+      if (selectedCountry?.value) {
+        try {
+          const teams = await getNationalTeams(selectedCountry.label);          
+          setNationalTeams(teams);
+        } catch (error) {
+          console.error("Error fetching national teams:", error);
+        }
+      }
+    };
+
+    if (matchType === "NationalTeam" && selectedCountry) {
+      fetchNationalTeams();
+    }
+  }, [selectedCountry, matchType, setNationalTeams]);
+
+  if (matchType === "ClubTeam") {
+    return (
+      <Select
+        value={selectedTeam}
+        onChange={onTeamChange}
+        options={
+          clubsData?.map((club) => ({
+            label: club.name,
+            value: club._id,
+          })) || []
+        }
+        placeholder={`Select ${isHome ? "Home" : "Away"} Team`}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Select
+        value={selectedCountry}
+        onChange={(selected) => {
+          setSelectedCountry(selected);
+          onTeamChange
+        }
+      }
+        options={
+          countriesData?.map((country) => ({
+            label: country.name,
+            value: country._id,
+          })) || []
+        }
+        placeholder="Select Country"
+      />
+      {selectedCountry && (
+        <Select
+          value={selectedTeam}
+          onChange={onTeamChange}
+          options={
+            nationalTeams?.map((team) => ({
+              label: `${team.country} ${team.type}`,
+              value: team._id,
+            })) || []
+          }
+          placeholder="Select National Team"
+        />
+      )}
+    </div>
+  );
+};
 const PredictMatchPage = () => {
   const { toast } = useToast();
   const [homePlayers, setHomePlayers] = useState([]);
@@ -71,10 +150,10 @@ const PredictMatchPage = () => {
     queryKey: ["countries"],
     queryFn: getCountries,
     enabled: matchType === "NationalTeam",
-    select: (data) =>
-      data.map((country) =>
-        typeof country === "string" ? country : country.country
-      ),
+    // select: (data) =>
+    //   data.map((country) =>
+    //     typeof country === "string" ? country : country.country
+    //   ),
   });
 
   const handleTeamChange = (selected, isHome) => {

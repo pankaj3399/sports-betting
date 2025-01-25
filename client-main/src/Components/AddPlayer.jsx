@@ -12,7 +12,7 @@ import { useToast } from '../hooks/use-toast';
 
 const AddPlayer = () => {
     const { toast } = useToast()
-
+    const [selectedCountry, setSelectedCountry] = useState(null);
     const [player, setPlayer] = useState({
         name: '',
         dateOfBirth: '',
@@ -234,6 +234,7 @@ const AddPlayer = () => {
     if (clubsDataLoading || positionsDataLoading || countriesDataLoading) {
         return <Loader />;
     }
+        
 
     return (
         <form onSubmit={handleSubmit} className="mx-10 p-6 bg-white shadow-md rounded-lg space-y-4">
@@ -310,15 +311,18 @@ const AddPlayer = () => {
                 <Select
                     value={player.country ? { 
                         value: player.country,
-                        label: player.country
+                        label: selectedCountry.label
                     } : null}
-                    onChange={(option) => handleInputChange(
+                    onChange={(option) => {
+                        handleInputChange(
                         { target: { value: option.value } },
                         'country'
-                    )}
+                    ),
+                setSelectedCountry(option)}
+                    }
                     options={countriesData.map(country => ({
-                        label: typeof country === 'string' ? country : country.country,
-                        value: typeof country === 'string' ? country : country.country
+                        label: country.name,
+                        value: country._id
                     }))}
                     className="w-full"
                     placeholder="Select Country"
@@ -346,8 +350,8 @@ const AddPlayer = () => {
                                     fetchAllNationalTeams(option.value, index);
                                 }}
                                 options={countriesData.map(country => ({
-                                    label: typeof country === 'string' ? country : country.country,
-                                    value: typeof country === 'string' ? country : country.country
+                                    label: typeof country === 'string' ? country : country.name,
+                                    value: typeof country === 'string' ? country : country.name
                                 }))}
                                 className="w-full"
                                 placeholder="Select National Team"

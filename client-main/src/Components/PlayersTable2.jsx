@@ -71,7 +71,7 @@ const PlayersTable2 = ({ players, sortOrder, setSortBy, setSortOrder }) => {
                 </TableCell>
                 <TableCell className="font-medium">{player.name}</TableCell>
                 <TableCell>{player.rating.toFixed(2) || 0}</TableCell>
-                <TableCell>{player.nationalTeams[0]?.name ?? "-"}</TableCell>
+                <TableCell>{player.countryDetails.country}</TableCell>
                 <TableCell>{player.clubDetails?.name ?? "-"}</TableCell>
                 <TableCell>{player?.netRating?.toFixed(2) ?? 0}</TableCell>
                 <TableCell className="text-right">
