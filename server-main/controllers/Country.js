@@ -65,6 +65,20 @@ module.exports = {
                     $and: [
                       { $in: ["$$country", "$nationalTeams.name"] },
                       { $in: ["$$type", "$nationalTeams.type"] },
+                      { 
+                        $gt: [
+                          {
+                            $size: {
+                              $filter: {
+                                input: "$nationalTeams",
+                                as: "team",
+                                cond: { $eq: ["$$team.to", null] }
+                              }
+                            }
+                          },
+                          0
+                        ]
+                      } 
                     ],
                   },
                 },
