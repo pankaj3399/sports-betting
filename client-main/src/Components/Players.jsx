@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
 import Loader from "./Loader/Loader";
@@ -23,7 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../Components/ui/select";
- 
+import { getActiveClubs } from "../api/Clubs";
+import { getPositions } from "../api/Position";
+import { getCountries } from "../api/Country";
+import EditPlayerModal from "./EditPlayerModal";
+
 const POSITIONS = [
   "Attacking Midfield",
   "Center Forward",
@@ -53,7 +57,8 @@ const Players = () => {
   const [positionFilter, setPositionFilter] = useState(null);
   const [ageGroup, setAgeGroup] = useState(null);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
-
+  const [showEditPlayerModal, setShowEditPlayerModal] = React.useState(false);
+  const [selectedPlayer, setSelectedPlayer] = React.useState(null);
   const { isLoading, error, data } = useQuery({
     queryKey: ["players", page, searchDebounce, sortBy, sortOrder, filter],
     queryFn: () =>
@@ -67,6 +72,100 @@ const Players = () => {
         ageGroup,
       }),
   });
+
+  const {
+    isLoading: clubsDataLoading,
+    error: clubsDataError,
+    data: clubsData,
+  } = useQuery({
+    queryKey: ["clubs"],
+    queryFn: getActiveClubs,
+  });
+
+  const { data: positionsData } = useQuery({
+    queryKey: ["positions"],
+    queryFn: () => getPositions(),
+  });
+
+  const { data: countriesData,  isLoading : countriesDataLoading } = useQuery({
+    queryKey: ["countries"],
+    queryFn: () => getCountries(),
+  });
+
+  const editPlayerMutation = useMutation({
+    mutationFn: async (playerData) => {
+      const url = `${
+        import.meta.env.VITE_REACT_APP_API_URL
+      }/api/player/players/${playerData._id}`;
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(playerData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update player: ${response.status}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["players"]);
+      setShowEditPlayerModal(false);
+      setSelectedPlayer(null);
+    },
+  });
+
+  const handleEditPlayer = (player) => {
+    setSelectedPlayer(player);
+    setShowEditPlayerModal(true);
+  };
+
+  const handleUpdatePlayer = async (updatedPlayerData) => {
+    try {
+      const cleanedData = {
+        ...updatedPlayerData,
+        _id: updatedPlayerData._id,
+        name: updatedPlayerData.name,
+        dateOfBirth: new Date(updatedPlayerData.dateOfBirth).toISOString(),
+        position: updatedPlayerData.position,
+        country: updatedPlayerData.country,
+        rating: updatedPlayerData.rating || 1,
+        currentClub: updatedPlayerData.currentClub?.club
+          ? {
+              club: updatedPlayerData.currentClub.club,
+              from: new Date(updatedPlayerData.currentClub.from).toISOString(),
+            }
+          : null,
+        previousClubs: updatedPlayerData.previousClubs
+          .filter((club) => club.name)
+          .map((club) => ({
+            name: club.name,
+            from: new Date(club.from).toISOString(),
+            to: new Date(club.to).toISOString(),
+          })),
+        nationalTeams: updatedPlayerData.nationalTeams
+          .filter((team) => team.name && team.type)
+          .map((team) => ({
+            name: team.name,
+            type: team.type,
+            from: new Date(team.from).toISOString(),
+            to: team.currentlyPlaying
+              ? null
+              : team.to
+              ? new Date(team.to).toISOString()
+              : null,
+          })),
+      };
+
+      editPlayerMutation.mutate(cleanedData);
+    } catch (error) {
+      console.error("Error preparing data:", error);
+    }
+  };
 
   useEffect(() => {
     const timeOutId = setTimeout(() => {
@@ -177,6 +276,7 @@ const Players = () => {
           <Loader className="pb-10" />
         ) : (
           <PlayersTable2
+            onEdit={handleEditPlayer}
             players={data.players}
             setSortBy={setSortBy}
             sortOrder={sortOrder}
@@ -184,6 +284,22 @@ const Players = () => {
           />
         )}
       </div>
+
+      {showEditPlayerModal &&
+        selectedPlayer &&
+        positionsData &&
+        countriesData && (
+          <EditPlayerModal
+            player={selectedPlayer}
+            onClose={() => setShowEditPlayerModal(false)}
+            onUpdate={handleUpdatePlayer}
+            clubsData={clubsData}
+            clubsDataLoading={clubsDataLoading}
+            countriesDataLoading={countriesDataLoading}
+            positionsData={positionsData}
+            countriesData={countriesData}
+          />
+        )}
 
       <div className="flex flex-row gap-5 justify-center mt-5">
         <Button onClick={() => setPage(page - 1)} disabled={page === 1}>

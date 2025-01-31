@@ -96,7 +96,7 @@ const ClubsTable = ({
                   </Button>
                 </div>
               </TableCell>
-              <TableCell>{club.rating}</TableCell>
+              <TableCell>{club.rating.toFixed(2)}</TableCell>
               <TableCell>{club?.netRating?.toFixed(2) ?? 0}</TableCell>
             </TableRow>
           ))}

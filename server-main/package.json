@@ -6,7 +6,8 @@
   "scripts": {
     "start" : "node index.js",
     "seed": "node seed.js",
-    "seed1": "node newseed.js"
+    "seed1": "node newseed.js",
+    "seed2": "node newseed2.js"
   },
   "keywords": [],
   "author": "",

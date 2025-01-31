@@ -8,7 +8,7 @@ import Match from "./models/Match.js";
 import { config } from "dotenv";
 config();
 
-export const positions = [
+const positions = [
   "Attacking Midfield",
   "Center Forward",
   "Central Midfield",
@@ -22,7 +22,7 @@ export const positions = [
   "Right Winger",
   "Second Stricker",
 ];
-export const countries = [
+const countries = [
   "Afghanistan",
   "Albania",
   "Algeria",
@@ -224,7 +224,7 @@ export const countries = [
   "Zambia",
   "Zimbabwe",
 ];
-export const firstNames = [
+const firstNames = [
   "Marcus",
   "James",
   "Robert",
@@ -250,7 +250,7 @@ export const firstNames = [
   "Timothy",
   "Ronald",
 ];
-export const lastNames = [
+const lastNames = [
   "Smith",
   "Johnson",
   "Williams",
@@ -276,7 +276,7 @@ export const lastNames = [
   "White",
   "Harris",
 ];
-export const nationalTeams = [
+const nationalTeams = [
   { Afghanistan: ["U-17", "U-19", "U-21", "A"] },
   { Albania: ["U-17", "U-19", "U-21", "A"] },
   { Algeria: ["U-17", "U-19", "U-21", "A"] },
@@ -478,7 +478,7 @@ export const nationalTeams = [
   { Zambia: ["U-17", "U-19", "U-21", "A"] },
   { Zimbabwe: ["U-17", "U-19", "U-21", "A"] },
 ];
-export const clubs = [
+const clubs = [
   "A Italiano",
   "A Klagenfurt",
   "Aalborg",
@@ -1360,6 +1360,30 @@ export const clubs = [
   "Zurich",
   "Zwolle",
 ];
+const leagues = [
+  "English Premier League",
+  "La Liga",
+  "Bundesliga",
+  "Serie A",
+  "Ligue 1",
+  "Eredivisie",
+  "Primeira Liga",
+  "Scottish Premiership",
+  "Brasileirão",
+  "Argentine Primera División",
+  "Major League Soccer",
+  "J1 League",
+  "Chinese Super League",
+  "Indian Super League",
+  "Saudi Pro League"
+];
+const venues = [
+  "Main Stadium",
+  "City Arena",
+  "Sports Complex",
+  "National Stadium",
+  "Olympic Park",
+];
 
 const generateDOB = () => {
   const start = new Date("1990-01-01");
@@ -1367,6 +1391,263 @@ const generateDOB = () => {
   return new Date(
     start.getTime() + Math.random() * (end.getTime() - start.getTime())
   );
+};
+
+const getRandomNationalTeams = (country) => {
+  const teamTypes = ["A", "U-21", "U-19", "U-17"];
+  const selectedTypes = teamTypes.slice(0, 1 + Math.floor(Math.random() * 2));
+  return selectedTypes.map((type) => ({
+    name: country,
+    type,
+    from: new Date("2023-01-01"),
+    to: null,
+  }));
+};
+
+const getPositionId = (positionMap, index) => {
+  if (index === 0) return positionMap.get("Goalkeeper");
+  if (index <= 4) return positionMap.get("Centre Back");
+  if (index <= 8) return positionMap.get("Central Midfield");
+  return positionMap.get("Center Forward");
+};
+
+const calculateExpectedPoints = (odds) => {
+  const winProb = parseFloat(odds.homeWin) || 0;
+  const drawProb = parseFloat(odds.draw) || 0;
+  const loseProb = parseFloat(odds.awayWin) || 0;
+  return winProb * 3 + drawProb * 1 + loseProb * 0;
+};
+
+const getMatchPoints = (goalsFor, goalsAgainst) => {
+  if (goalsFor > goalsAgainst) return 3;
+  if (goalsFor === goalsAgainst) return 1;
+  return 0;
+};
+
+const calculateRatingChange = (actualPoints, expectedPoints) => {
+  return Number((actualPoints - expectedPoints).toFixed(4));
+};
+
+const addPlayersToClub = async (
+  clubName,
+  clubDocs,
+  countryDocs,
+  positionMap
+) => {
+  const currClub = clubDocs.find((club) => club.name === clubName);
+  const getRandomIndex = (arr) => Math.floor(Math.random() * arr.length);
+  const usedFirstNames = new Set();
+  const usedLastNames = new Set();
+
+  const getUniqueName = () => {
+    let firstName, lastName;
+
+    do {
+      firstName = firstNames[getRandomIndex(firstNames)];
+      lastName = lastNames[getRandomIndex(lastNames)];
+    } while (usedFirstNames.has(firstName) && usedLastNames.has(lastName));
+
+    usedFirstNames.add(firstName);
+    usedLastNames.add(lastName);
+    return { firstName, lastName };
+  };
+
+  if (currClub) {
+    const country = countryDocs[Math.floor(Math.random() * countryDocs.length)];
+    const clubPlayers = [];
+    for (let i = 0; i < 12; i++) {
+      const { firstName, lastName } = getUniqueName();
+      clubPlayers.push({
+        name: `${firstName} ${lastName}`,
+        dateOfBirth: generateDOB(),
+        position: getPositionId(positionMap, i),
+        currentClub: { club: currClub._id, from: new Date("2023-07-01") },
+        country: country._id,
+        nationalTeams: getRandomNationalTeams(),
+        previousClubs: [],
+      });
+    }
+    const savedClubPlayers = await Player.insertMany(clubPlayers);
+    console.log(`Added ${savedClubPlayers.length} players to ${clubName}.`);
+  }
+};
+
+const addMatch = async (homeClubName, awayClubName, clubDocs, playerDocs) => {
+  try {
+    const homeClub = clubDocs.find((club) => club.name === homeClubName);
+    const awayClub = clubDocs.find((club) => club.name === awayClubName);
+
+    if (!homeClub || !awayClub) {
+      throw new Error("One or both clubs not found");
+    }
+
+    const getClubPlayers = (clubId) => {
+      return playerDocs.filter(
+        (player) => player.currentClub.club.toString() === clubId.toString()
+      );
+    };
+
+    const homeTeamPlayers = getClubPlayers(homeClub._id);
+    const awayTeamPlayers = getClubPlayers(awayClub._id);
+
+    // Generate random scores with a slight home advantage
+    const generateScores = () => {
+      const homeAdvantage = Math.random() < 0.6; // 60% chance of home team doing better
+      const maxGoals = 5;
+      let homeScore, awayScore;
+
+      if (homeAdvantage) {
+        homeScore = Math.floor(Math.random() * maxGoals);
+        awayScore = Math.floor(Math.random() * (homeScore + 1));
+      } else {
+        awayScore = Math.floor(Math.random() * maxGoals);
+        homeScore = Math.floor(Math.random() * (awayScore + 1));
+      }
+
+      return { homeScore, awayScore };
+    };
+
+    const generateOdds = () => {
+      let homeWin = 0.3 + Math.random() * 0.4; // Between 0.3 and 0.7
+      let awayWin = 0.2 + Math.random() * 0.3; // Between 0.2 and 0.5
+      let draw = 1 - homeWin - awayWin; // Remaining probability
+
+      draw = Math.max(0, draw);
+
+      const total = homeWin + awayWin + draw;
+      homeWin = Number((homeWin / total).toFixed(2));
+      awayWin = Number((awayWin / total).toFixed(2));
+      draw = Number((1 - homeWin - awayWin).toFixed(2)); 
+
+      return { homeWin, draw, awayWin };
+    };
+
+    const selectMatchPlayers = (players, count = 11) => {
+      const shuffled = [...players].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count).map((player) => ({
+        player: player._id,
+        starter: true,
+      }));
+    };
+
+    // Generate a random date within the last 6 months
+    const generateMatchDate = () => {
+      const now = new Date();
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(now.getMonth() - 6);
+      return new Date(
+        sixMonthsAgo.getTime() +
+          Math.random() * (now.getTime() - sixMonthsAgo.getTime())
+      );
+    };
+
+   
+    const randomVenue = venues[Math.floor(Math.random() * venues.length)];
+
+    
+    const randomLeague = leagues[Math.floor(Math.random() * leagues.length)];
+
+    const { homeScore, awayScore } = generateScores();
+    const odds = generateOdds();
+
+    const homeExpectedPoints = calculateExpectedPoints(odds);
+    const awayExpectedPoints = calculateExpectedPoints({
+      homeWin: odds.awayWin,
+      draw: odds.draw,
+      awayWin: odds.homeWin,
+    });
+
+    const homeActualPoints = getMatchPoints(
+      parseInt(homeScore),
+      parseInt(awayScore)
+    );
+    const awayActualPoints = getMatchPoints(
+      parseInt(homeScore),
+      parseInt(awayScore)
+    );
+
+    const homeTeamRating = calculateRatingChange(
+      homeActualPoints,
+      homeExpectedPoints
+    );
+    const awayTeamRating = calculateRatingChange(
+      awayActualPoints,
+      awayExpectedPoints
+    );
+
+    const homeTeamSelectedPlayers = selectMatchPlayers(homeTeamPlayers);
+    const awayTeamSelectedPlayers = selectMatchPlayers(awayTeamPlayers);
+
+    const matchDate = generateMatchDate();
+
+    const matchData = {
+      type: "ClubTeam",
+      date: matchDate,
+      venue: `${randomVenue}`,
+      league: `${randomLeague}`,
+      odds,
+      homeTeam: {
+        team: homeClub._id,
+        score: homeScore,
+        players: homeTeamSelectedPlayers,
+      },
+      awayTeam: {
+        team: awayClub._id,
+        score: awayScore,
+        players: awayTeamSelectedPlayers,
+      },
+      rating: {
+        homeTeamRating: homeTeamRating,
+        awayTeamRating: awayTeamRating,
+      },
+    };
+
+    
+
+    const match = await Match.create(matchData);
+
+    const updatePlayerRatings = async (players, ratingChange) => {
+      return Promise.all(
+        players.map(async ({ player: playerId }) => {
+          const ratingHistoryEntry = {
+            date: matchDate,
+            newRating: ratingChange,
+            type: "match",
+            matchId: match._id,
+          };
+
+          return Player.findByIdAndUpdate(
+            playerId,
+            {
+              $push: { ratingHistory: ratingHistoryEntry },
+            },
+            {
+              new: true,
+              runValidators: true,
+            }
+          );
+        })
+      );
+    };
+
+    await Promise.all([
+      updatePlayerRatings(
+        homeTeamSelectedPlayers.filter((p) => p.starter),
+        homeTeamRating
+      ),
+      updatePlayerRatings(
+        awayTeamSelectedPlayers.filter((p) => p.starter),
+        awayTeamRating
+      ),
+    ]);
+
+    console.log(
+      `Added match: ${homeClubName} ${homeScore} - ${awayScore} ${awayClubName} at ${randomVenue}`
+    );
+  } catch (error) {
+    console.error("Error adding match:", error);
+    throw error;
+  }
 };
 
 const seedDatabase = async () => {
@@ -1385,7 +1666,6 @@ const seedDatabase = async () => {
       Match.deleteMany({}),
     ]);
 
-    // Create positions first and store them in a map for easy access
     const positionMap = new Map();
     const positionDocs = await Position.insertMany(
       positions.map((position) => ({ position }))
@@ -1394,7 +1674,6 @@ const seedDatabase = async () => {
       positionMap.set(doc.position, doc._id);
     });
 
-    // Create countries and store in map
     const countryMap = new Map();
     const countryDocs = await Country.insertMany(
       countries.map((country) => ({
@@ -1406,7 +1685,6 @@ const seedDatabase = async () => {
       countryMap.set(doc.country, doc._id);
     });
 
-    // Create clubs and store in map
     const clubMap = new Map();
     const clubDocs = await Club.insertMany(
       clubs.map((club) => ({
@@ -1418,7 +1696,6 @@ const seedDatabase = async () => {
       clubMap.set(doc.name, doc._id);
     });
 
-    // Create national teams with proper country references
     const nationalTeamMap = new Map();
     const nationalTeamData = [];
 
@@ -1440,180 +1717,26 @@ const seedDatabase = async () => {
       nationalTeamMap.set(key, doc._id);
     });
 
-    // Helper function to get position ID based on index
-    const getPositionId = (index) => {
-      if (index === 0) return positionMap.get("Goalkeeper");
-      if (index <= 4) return positionMap.get("Centre Back");
-      if (index <= 8) return positionMap.get("Central Midfield");
-      return positionMap.get("Center Forward");
-    };
-
-    // Helper function to get random national teams for a country
-    const getRandomNationalTeams = (country) => {
-      const teamTypes = ["A", "U-21", "U-19", "U-17"];
-      const selectedTypes = teamTypes.slice(
-        0,
-        1 + Math.floor(Math.random() * 2)
-      );
-      return selectedTypes.map((type) => ({
-        name: country,
-        type,
-        from: new Date("2023-01-01"),
-        to: null,
-      }));
-    };
-    const playerData = [];
-    const clubsToPopulate = clubDocs.slice(0, 5);
-    clubsToPopulate.forEach((club, clubIndex) => {
-      const countryForClub = countryDocs[clubIndex];
-      for (let i = 0; i < 12; i++) {
-        const playerIndex = clubIndex * 12 + i;
-        playerData.push({
-          name: `${firstNames[playerIndex % firstNames.length]} ${
-            lastNames[playerIndex % lastNames.length]
-          }`,
-          dateOfBirth: generateDOB(),
-          position: getPositionId(i),
-          currentClub: { club: club._id, from: new Date("2023-07-01") },
-          country: countryForClub._id,
-          nationalTeams: getRandomNationalTeams(countryForClub.country),
-          previousClubs: [],
-          ratingHistory: [
-            { date: new Date("2023-07-01"), newRating: 3, type: "manual" },
-          ],
-        });
-      }
-    });
-
-    const savedPlayers = await Player.insertMany(playerData);
-
-    // Add players to Real Madrid
-    const realMadridClub = clubDocs.find((club) => club.name === "Real Madrid");
-    if (realMadridClub) {
-      const countryForRealMadrid = countryDocs.find(
-        (country) => country === realMadridClub.country
-      );
-      const realMadridPlayers = [];
-      for (let i = 0; i < 12; i++) {
-        realMadridPlayers.push({
-          name: `${firstNames[i % firstNames.length]} ${
-            lastNames[i % lastNames.length]
-          }`,
-          dateOfBirth: generateDOB(),
-          position: getPositionId(i),
-          currentClub: {
-            club: realMadridClub._id,
-            from: new Date("2023-07-01"),
-          },
-          country: countryDocs[i]._id,
-          nationalTeams: getRandomNationalTeams(),
-          previousClubs: [],
-          ratingHistory: [
-            {
-              date: new Date("2023-07-01"),
-              newRating: Math.floor(Math.random() * 20),
-              type: "manual",
-            },
-          ],
-        });
-      }
-      const savedRealMadridPlayers = await Player.insertMany(realMadridPlayers);
-      console.log(
-        `Added ${savedRealMadridPlayers.length} players to Real Madrid.`
-      );
+    for (let i = 0; i < 12; i++) {
+      addPlayersToClub(clubs[i], clubDocs, countryDocs, positionMap);
     }
 
-    // Log summary
     console.log("\nDatabase seeded successfully with:");
     console.log(`Countries: ${countryDocs.length}`);
     console.log(`Clubs: ${clubDocs.length}`);
     console.log(`Positions: ${positionDocs.length}`);
     console.log(`National Teams: ${nationalTeamDocs.length}`);
-    console.log(`Players: ${savedPlayers.length}`);
-
-    // Detailed player logging
-    console.log("\nSample Player Details:");
-    const playerDetails = await Player.find()
-      .limit(5)
-      .populate("currentClub.club")
-      .populate("position")
-      .populate("country");
-
-    playerDetails.forEach((player) => {
-      console.log(`\nPlayer: ${player.name}`);
-      console.log(`Club: ${player.currentClub.club.name}`);
-      console.log(`Position: ${player.position.position}`);
-      console.log(`Country: ${player.country.country}`);
-      console.log("National Teams:", player.nationalTeams);
-    });
 
     const players = await Player.find();
-    const allClubs = await Club.find();
 
-    const matches = [
-      {
-        type: "ClubTeam",
-        date: new Date("2023-12-15"),
-        venue: "Stadium A",
-        odds: { homeWin: 0.5, draw: 0.3, awayWin: 0.2 },
-        homeTeam: {
-          team: allClubs[1]._id,
-          score: 2,
-          players: players.slice(13, 17).map((player) => ({
-            player: player._id,
-            starter: true,
-          })),
-        },
-        awayTeam: {
-          team: allClubs[0]._id,
-          score: 1,
-          players: players.slice(4, 9).map((player) => ({
-            player: player._id,
-            starter: true,
-          })),
-        },
-        rating: {
-          homeTeamRating: 4.5,
-          awayTeamRating: 4.2,
-        },
-      },
-      {
-        type: "ClubTeam",
-        date: new Date("2023-11-10"),
-        venue: "National Arena",
-        odds: { homeWin: 0.4, draw: 0.4, awayWin: 0.2 },
-        homeTeam: {
-          team: allClubs[0]._id,
-          score: 3,
-          players: players.slice(0, 6).map((player) => ({
-            player: player._id,
-            starter: true,
-          })),
-        },
-        awayTeam: {
-          team: allClubs[1]._id,
-          score: 3,
-          players: players.slice(16, 20).map((player) => ({
-            player: player._id,
-            starter: true,
-          })),
-        },
-        rating: {
-          homeTeamRating: 4.8,
-          awayTeamRating: 4.9,
-        },
-      },
-    ];
-
-    const savedMatches = await Match.insertMany(matches);
-
-    console.log(`\nMatches seeded successfully: ${savedMatches.length}`);
-    savedMatches.forEach((match) => {
-      console.log(
-        `Match ID: ${match._id}, Venue: ${match.venue}, Date: ${match.date}`
-      );
-    });
-
+    await Promise.all(
+      clubs.slice(0, 20).map(async (club, i) => {
+        if (i % 2 === 0 && i + 1 < clubs.length) {
+          await addMatch(clubs[i], clubs[i + 1], clubDocs, players);
+        }
+      })
+    );
+    console.log("match successfully created");
     await mongoose.connection.close();
   } catch (error) {
     console.error("Error seeding database:", error);

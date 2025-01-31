@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
 import { getNationalTeams } from "../api/Country";
-import { useQuery } from "@tanstack/react-query";
-import { getCountries } from "../api/Country";
 import Select from "react-select";
 
 const EditPlayerModal = ({
@@ -11,8 +9,10 @@ const EditPlayerModal = ({
   onClose,
   onUpdate,
   positionsData,
+  countriesData,
   clubsData,
-  clubsDataLoading
+  clubsDataLoading,
+  countriesDataLoading,
 }) => {
   const [selectedCountries, setSelectedCountries] = useState(
     player.nationalTeams?.map((team) => ({
@@ -22,22 +22,13 @@ const EditPlayerModal = ({
   );
 
   // const {
-  //   isLoading: positionsDataLoading,
-  //   error: positionsDataError,
-  //   data: positionsData,
+  //   isLoading: countriesDataLoading,
+  //   error: countriesDataError,
+  //   data: countriesData,
   // } = useQuery({
-  //   queryKey: ["positions"],
-  //   queryFn: () => getPositions(),
+  //   queryKey: ["countries"],
+  //   queryFn: () => getCountries(),
   // });
-
-  const {
-    isLoading: countriesDataLoading,
-    error: countriesDataError,
-    data: countriesData,
-  } = useQuery({
-    queryKey: ["countries"],
-    queryFn: () => getCountries(),
-  });
   const formatDate = (dateString) => {
     if (!dateString) return "";
     return dateString.split("T")[0];
@@ -47,6 +38,7 @@ const EditPlayerModal = ({
     ...player,
     rating: player.rating || 1,
     position: player.position?._id || player.position,
+    country: typeof player.country === "string" ? player.country : player.country._id,
     currentClub: {
       club: player.currentClub?.club || null,
       from: formatDate(player.currentClub?.from),
@@ -107,6 +99,8 @@ const EditPlayerModal = ({
     }
   };
 
+  console.log(editedPlayer);
+  
   // Load existing national teams data on component mount
   useEffect(() => {
     const loadExistingNationalTeams = async () => {
@@ -224,12 +218,7 @@ const EditPlayerModal = ({
       ],
     });
   };
-  useEffect(() => {
-    console.log("Player data:", player);
-    console.log("Current club data:", player.currentClub);
-  }, [player]);
-  // console.log('ClubsData available:', clubsData);
-  // console.log('Current club ID we are looking for:', editedPlayer.currentClub.club);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -291,6 +280,30 @@ const EditPlayerModal = ({
                 }
               />
             </div>
+
+            <div className="flex flex-col">
+              <label className="font-semibold text-gray-700">Country:</label>
+              <Select
+                value={
+                  editedPlayer.country
+                    ? {
+                        value: typeof editedPlayer.country === 'string' ? editedPlayer.country : editedPlayer.country._id,
+                        label: typeof editedPlayer.country === 'string' ? countriesData.find(c => c._id === editedPlayer.country).name : editedPlayer.country.country ,
+                      }
+                    : null
+                }
+                onChange={(option) =>
+                  handleInputChange("country", option.value)
+                }
+                isLoading={countriesDataLoading}
+                options={
+                  countriesData?.map((c) => ({
+                    value: c._id,
+                    label: c.name,
+                  })) || []
+                }
+              />
+            </div>
           </div>
 
           {/* Current Club */}
@@ -347,9 +360,8 @@ const EditPlayerModal = ({
                     onChange={(option) => handleCountrySelect(option, index)} // Changed this line
                     options={
                       countriesData?.map((country) => ({
-                        label:
-                          country.name,
-                        value:country._id,
+                        label: country.name,
+                        value: country._id,
                       })) || []
                     }
                     placeholder="Select Country"
