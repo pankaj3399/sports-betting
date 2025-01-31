@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getClubs, addClub, editClub, deleteClub } from "../api/Clubs";
+import { getClubs, addClub, editClub, deleteClub, getActiveClubs } from "../api/Clubs";
 import { getPositions } from "../api/Position";
 import { getCountries } from "../api/Country";
 import { Button } from "../Components/ui/button";
@@ -36,10 +36,21 @@ const Home = () => {
     queryFn: () => getPositions(),
   });
 
-  const { data: countriesData } = useQuery({
+   const {
+      isLoading: clubsDataLoading,
+      error: clubsDataError,
+      data: clubsData,
+    } = useQuery({
+      queryKey: ["clubs"],
+      queryFn: getActiveClubs,
+    });
+  
+
+  const { data: countriesData, isLoading : countriesDataLoading } = useQuery({
     queryKey: ["countries"],
-    queryFn: () => getCountries(),
+    queryFn: getCountries,
   });
+
   const {
     data: playersData,
     isLoading: isLoadingPlayers,
@@ -407,14 +418,16 @@ const Home = () => {
         selectedPlayer &&
         positionsData &&
         countriesData &&
-        data?.clubs && (
+        clubsData && (
           <EditPlayerModal
             player={selectedPlayer}
             onClose={() => setShowEditPlayerModal(false)}
             onUpdate={handleUpdatePlayer}
-            clubsData={data.clubs}
+            clubsData={clubsData}
             positionsData={positionsData}
             countriesData={countriesData}
+            clubsDataLoading={clubsDataLoading}
+            countriesDataLoading={countriesDataLoading}
           />
         )}
     </div>

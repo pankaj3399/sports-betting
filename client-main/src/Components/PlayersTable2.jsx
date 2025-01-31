@@ -7,9 +7,10 @@ import {
   TableCell,
   TableHeader,
 } from "../Components/ui/table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Edit } from "lucide-react";
+import { Button } from "./ui/button";
 
-const PlayersTable2 = ({ players, sortOrder, setSortBy, setSortOrder }) => {
+const PlayersTable2 = ({ players, sortOrder, setSortBy, setSortOrder, onEdit }) => {
   const calculateAge = (dateOfBirth) => {
     const currentDate = new Date();
     const birthDate = new Date(dateOfBirth);
@@ -51,6 +52,9 @@ const PlayersTable2 = ({ players, sortOrder, setSortBy, setSortOrder }) => {
             <SortableHeader title="Rating" field="rating" />
             <SortableHeader title="Country" field="country" />
             <SortableHeader title="Club" field="club" />
+            <TableHead className="w-32 font-semibold text-gray-700">
+              Actions
+            </TableHead>
             <SortableHeader title="Net Rating" field="netRating" />
             <TableHead className="w-16 text-right font-semibold text-gray-700">
               Age
@@ -73,6 +77,17 @@ const PlayersTable2 = ({ players, sortOrder, setSortBy, setSortOrder }) => {
                 <TableCell>{player.rating.toFixed(2) || 0}</TableCell>
                 <TableCell>{player.countryDetails.country}</TableCell>
                 <TableCell>{player.clubDetails?.name ?? "-"}</TableCell>
+                <TableCell>
+                  <Button
+                    onClick={() => onEdit(player)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center justify-center hover:bg-gray-100"
+                  >
+                    <Edit className="h-4 w-4" />
+                    <span className="hidden sm:inline">Edit</span>
+                  </Button>
+                </TableCell>
                 <TableCell>{player.netRating.toFixed(2) || 0}</TableCell>
                 <TableCell className="text-right">
                   <span className="font-medium">

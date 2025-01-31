@@ -41,7 +41,7 @@ const PlayersPage = () => {
     queryFn: () => getPositions(),
   });
 
-  const { data: countriesData } = useQuery({
+  const { data: countriesData, isLoading : countriesDataLoading } = useQuery({
     queryKey: ['countries'],
     queryFn: () => getCountries(),
   });
@@ -161,6 +161,7 @@ const PlayersPage = () => {
           clubsDataLoading={clubsDataLoading}
           positionsData={positionsData}
           countriesData={countriesData}
+          countriesDataLoading={countriesDataLoading}
         />
       )}
     </div>
