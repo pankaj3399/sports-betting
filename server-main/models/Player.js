@@ -76,4 +76,7 @@ PlayerSchema.pre("findOneAndUpdate", async function (next) {
   next();
 });
 
+PlayerSchema.index({ "currentClub.club": 1 }); 
+PlayerSchema.index({ "nationalTeams.name": 1, "nationalTeams.type": 1 }); 
+
 module.exports = mongoose.model("Player", PlayerSchema);
