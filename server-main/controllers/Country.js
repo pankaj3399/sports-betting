@@ -26,136 +26,184 @@ module.exports = {
     }
   },
 
-  async fetchAllNationalTeams(req, res) {
-    try {
-      const {
-        page = 1,
-        limit = 10,
-        sortBy = "country",
-        sortOrder = "asc",
-        search = "",
-      } = req.query;
+async fetchAllNationalTeams(req, res) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = "country",
+      sortOrder = "asc",
+      search = "",
+    } = req.query;
 
-      const pageNum = parseInt(page, 10);
-      const limitNum = parseInt(limit, 10);
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
 
-      if (pageNum <= 0 || limitNum <= 0) {
-        return res
-          .status(400)
-          .json({ message: "Page and limit must be positive integers." });
-      }
+    if (pageNum <= 0 || limitNum <= 0) {
+      return res
+        .status(400)
+        .json({ message: "Page and limit must be positive integers." });
+    }
 
-      const sortOptions = {};
-      sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
 
-      const pipeline = [
-        {
-          $match: {
-            country: { $regex: search, $options: "i" },
-          },
+    const pipeline = [
+      {
+        $match: {
+          country: { $regex: search, $options: "i" },
         },
-        {
-          $lookup: {
-            from: "players",
-            let: { country: "$country", type: "$type" },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $in: ["$$country", "$nationalTeams.name"] },
-                      { $in: ["$$type", "$nationalTeams.type"] },
-                      { 
-                        $gt: [
-                          {
-                            $size: {
-                              $filter: {
-                                input: "$nationalTeams",
-                                as: "team",
-                                cond: { $eq: ["$$team.to", null] }
+      },
+      {
+        $lookup: {
+          from: "players",
+          let: { country: "$country", type: "$type" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $in: ["$$country", "$nationalTeams.name"] },
+                    { $in: ["$$type", "$nationalTeams.type"] },
+                    { 
+                      $gt: [
+                        {
+                          $size: {
+                            $filter: {
+                              input: "$nationalTeams",
+                              as: "team",
+                              cond: { $eq: ["$$team.to", null] }
+                            }
+                          }
+                        },
+                        0
+                      ]
+                    } 
+                  ],
+                },
+              },
+            },
+            {
+              $project: {
+                totalRating: {
+                  $sum: "$ratingHistory.newRating",
+                },
+                // CALCULATE NetRating dynamically
+                totalNetRating: {
+                  $sum: {
+                    $map: {
+                      input: "$ratingHistory",
+                      as: "rating",
+                      in: {
+                        $let: {
+                          vars: {
+                            daysDiff: {
+                              $floor: {
+                                $divide: [
+                                  {
+                                    $subtract: [
+                                      new Date(),
+                                      "$$rating.date"
+                                    ]
+                                  },
+                                  1000 * 60 * 60 * 24
+                                ]
                               }
                             }
                           },
-                          0
-                        ]
-                      } 
-                    ],
-                  },
-                },
+                          in: {
+                            $cond: [
+                              { $lt: ["$$daysDiff", 0] },
+                              0,
+                              {
+                                $cond: [
+                                  { $gte: ["$$daysDiff", 1461] },
+                                  0,
+                                  {
+                                    $multiply: [
+                                      "$$rating.newRating",
+                                      {
+                                        $divide: [
+                                          { $subtract: [1461, "$$daysDiff"] },
+                                          1461
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               },
-              {
-                $project: {
-                  totalRating: {
-                    $sum: "$ratingHistory.newRating",
-                  },
-                  totalNetRating: {
-                    $sum: "$ratingHistory.netRating",
-                  },
-                },
-              },
-            ],
-            as: "players",
-          },
+            },
+          ],
+          as: "players",
         },
-        {
-          $addFields: {
-            rating: { $sum: "$players.totalRating" },
-            netRating: { $sum: "$players.totalNetRating" },
-          },
+      },
+      {
+        $addFields: {
+          rating: { $sum: "$players.totalRating" },
+          netRating: { $sum: "$players.totalNetRating" },
         },
-        {
-          $project: {
-            country: 1,
-            type: 1,
-            _id: 1,
-            rating: 1,
-            netRating: 1
-          },
+      },
+      {
+        $project: {
+          country: 1,
+          type: 1,
+          _id: 1,
+          rating: 1,
+          netRating: 1
         },
-        {
-          $sort: sortOptions,
-        },
-        {
-          $skip: (pageNum - 1) * limitNum,
-        },
-        {
-          $limit: limitNum,
-        },
-      ];
+      },
+      {
+        $sort: sortOptions,
+      },
+      {
+        $skip: (pageNum - 1) * limitNum,
+      },
+      {
+        $limit: limitNum,
+      },
+    ];
 
-      const totalTeamsPipeline = [
-        {
-          $match: {
-            country: { $regex: search, $options: "i" },
-          },
+    const totalTeamsPipeline = [
+      {
+        $match: {
+          country: { $regex: search, $options: "i" },
         },
-        {
-          $count: "totalTeams",
-        },
-      ];
+      },
+      {
+        $count: "totalTeams",
+      },
+    ];
 
-      const [teams, totalTeamsResult] = await Promise.all([
-        NationalTeam.aggregate(pipeline),
-        NationalTeam.aggregate(totalTeamsPipeline),
-      ]);
+    const [teams, totalTeamsResult] = await Promise.all([
+      NationalTeam.aggregate(pipeline),
+      NationalTeam.aggregate(totalTeamsPipeline),
+    ]);
 
-      const totalTeams = totalTeamsResult[0]?.totalTeams || 0;
+    const totalTeams = totalTeamsResult[0]?.totalTeams || 0;
 
-      const response = {
-        totalTeams,
-        totalPages: Math.ceil(totalTeams / limitNum),
-        currentPage: pageNum,
-        teams,
-      };
+    const response = {
+      totalTeams,
+      totalPages: Math.ceil(totalTeams / limitNum),
+      currentPage: pageNum,
+      teams,
+    };
 
-      return res.status(200).json(response);
-    } catch (error) {
-      return res.status(400).json({
-        message: "Error fetching national teams",
-        error: error.message,
-      });
-    }
-  },
+    return res.status(200).json(response);
+  } catch (error) {
+    return res.status(400).json({
+      message: "Error fetching national teams",
+      error: error.message,
+    });
+  }
+},
 
   async getNationalTeamPlayers(req, res) {
     try {
