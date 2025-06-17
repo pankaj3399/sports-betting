@@ -243,6 +243,24 @@ module.exports = {
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(perPage, 10);
 
+       const currentDate = new Date();
+    const playersWithRatings = await Player.find({ "ratingHistory.0": { $exists: true } });
+    
+    for (const player of playersWithRatings) {
+      let updated = false;
+      for (const rating of player.ratingHistory) {
+        const matchDate = new Date(rating.date);
+        const differenceInDays = Math.floor((currentDate - matchDate) / (24 * 60 * 60 * 1000));
+        const newNetRating = differenceInDays < 0 ? 0 : ((1461 - differenceInDays) / 1461) * rating.newRating;
+        
+        if (Math.abs(rating.netRating - newNetRating) > 0.01) {
+          rating.netRating = newNetRating;
+          updated = true;
+        }
+      }
+      if (updated) await player.save();
+    }
+
       let sortField = sortBy;
       if (sortBy === "club") {
         sortField = "clubDetails.name";
