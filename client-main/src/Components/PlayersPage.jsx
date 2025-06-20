@@ -8,6 +8,7 @@ import EditPlayerModal from './EditPlayerModal';
 import Loader from './Loader/Loader';
 import { getActiveClubs } from '../api/Clubs';
 import { getPositions } from '../api/Position';
+import { getCountries } from '../api/Country';
 
 const PlayersPage = () => {
   const { clubId } = useParams();
