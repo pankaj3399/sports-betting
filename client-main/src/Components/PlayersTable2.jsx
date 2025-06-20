@@ -74,7 +74,7 @@ const PlayersTable2 = ({ players, sortOrder, setSortBy, setSortOrder, onEdit }) 
                   </span>
                 </TableCell>
                 <TableCell className="font-medium">{player.name}</TableCell>
-                <TableCell>{player.rating.toFixed(2) || 0}</TableCell>
+                <TableCell>{player.rating?.toFixed(2) ?? '0.00'}</TableCell>
                 <TableCell>{player.countryDetails.country}</TableCell>
                 <TableCell>{player.clubDetails?.name ?? "-"}</TableCell>
                 <TableCell>
@@ -88,7 +88,7 @@ const PlayersTable2 = ({ players, sortOrder, setSortBy, setSortOrder, onEdit }) 
                     <span className="hidden sm:inline">Edit</span>
                   </Button>
                 </TableCell>
-                <TableCell>{player.netRating.toFixed(2) || 0}</TableCell>
+                <TableCell>{player.netRating?.toFixed(2) ?? '0.00'}</TableCell>
                 <TableCell className="text-right">
                   <span className="font-medium">
                     {calculateAge(player.dateOfBirth)}
