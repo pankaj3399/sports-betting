@@ -227,202 +227,238 @@ module.exports = {
     }
   },
 
-  async fetchAllPlayers(req, res) {
-    try {
-      const {
-        page = 1,
-        perPage = 10,
-        search = "",
-        sortBy = "name",
-        sortOrder = "asc",
-        filter,
-        ageGroup = null,
-        position = null,
-      } = req.query;
-
-      const pageNum = parseInt(page, 10);
-      const limitNum = parseInt(perPage, 10);
-
-       const currentDate = new Date();
-    const playersWithRatings = await Player.find({ "ratingHistory.0": { $exists: true } });
+async fetchAllPlayers(req, res) {
+  try {
+    console.log('Starting fetchAllPlayers...');
     
-    for (const player of playersWithRatings) {
-      let updated = false;
-      for (const rating of player.ratingHistory) {
-        const matchDate = new Date(rating.date);
-        const differenceInDays = Math.floor((currentDate - matchDate) / (24 * 60 * 60 * 1000));
-        const newNetRating = differenceInDays < 0 ? 0 : ((1461 - differenceInDays) / 1461) * rating.newRating;
-        
-        if (Math.abs(rating.netRating - newNetRating) > 0.01) {
-          rating.netRating = newNetRating;
-          updated = true;
-        }
-      }
-      if (updated) await player.save();
+    const {
+      page = 1,
+      perPage = 10,
+      search = "",
+      sortBy = "name",
+      sortOrder = "asc",
+      filter,
+      ageGroup = null,
+      position = null,
+    } = req.query;
+
+    console.log('Query params:', { page, perPage, search, sortBy, sortOrder });
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(perPage, 10);
+
+    // REMOVED THE EXPENSIVE RATING UPDATE LOOP HERE
+    // This was causing the page to timeout and go blank
+
+    let sortField = sortBy;
+    if (sortBy === "club") {
+      sortField = "clubDetails.name";
     }
 
-      let sortField = sortBy;
-      if (sortBy === "club") {
-        sortField = "clubDetails.name";
-      }
+    const sortOptions = {};
+    sortOptions[sortField] = sortOrder === "asc" ? 1 : -1;
 
-      const sortOptions = {};
-      sortOptions[sortField] = sortOrder === "asc" ? 1 : -1;
+    const matchConditions = {
+      name: { $regex: search, $options: "i" },
+    };
 
-      const matchConditions = {
-        name: { $regex: search, $options: "i" },
+    if (filter === "true") {
+      const ageGroupMap = {
+        under20: { $lt: 20 },
+        under22: { $lt: 22 },
+        under26: { $lt: 26 },
+        under30: { $lt: 30 },
       };
 
-      if (filter === "true") {
-        const ageGroupMap = {
-          under20: { $lt: 20 },
-          under22: { $lt: 22 },
-          under26: { $lt: 26 },
-          under30: { $lt: 30 },
-        };
-
-        if (ageGroup && ageGroupMap[ageGroup]) {
-          matchConditions.age = ageGroupMap[ageGroup];
-        }
-
-        if (position) {
-          matchConditions["positionDetails.position"] =
-            decodeURIComponent(position);
-        }
+      if (ageGroup && ageGroupMap[ageGroup]) {
+        matchConditions.age = ageGroupMap[ageGroup];
       }
 
-      const pipeline = [
-        {
-          $addFields: {
-            age: {
-              $floor: {
-                $divide: [
-                  { $subtract: [new Date(), "$dateOfBirth"] },
-                  365 * 24 * 60 * 60 * 1000,
-                ],
-              },
-            },
-          },
-        },
-        {
-          $addFields: {
-            rating: {
-              $reduce: {
-                input: "$ratingHistory",
-                initialValue: 0,
-                in: { $add: ["$$value", "$$this.newRating"] },
-              },
-            },
-            netRating: {
-              $reduce: {
-                input: "$ratingHistory",
-                initialValue: 0,
-                in: { $add: ["$$value", "$$this.netRating"] },
-              },
-            },
-          },
-        },
-        {
-          $lookup: {
-            from: "clubteams",
-            localField: "currentClub.club",
-            foreignField: "_id",
-            as: "clubDetails",
-          },
-        },
-        { $unwind: { path: "$clubDetails", preserveNullAndEmptyArrays: true } },
-        {
-          $lookup: {
-            from: "countries",
-            localField: "country",
-            foreignField: "_id",
-            as: "countryDetails",
-          },
-        },
-        { $unwind: { path: "$countryDetails", preserveNullAndEmptyArrays: true } },
-        {
-          $lookup: {
-            from: "positions",
-            localField: "position",
-            foreignField: "_id",
-            as: "positionDetails",
-          },
-        },
-        {
-          $unwind: {
-            path: "$positionDetails",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $match: matchConditions,
-        },
-        { $sort: sortOptions },
-        { $skip: (pageNum - 1) * limitNum },
-        { $limit: limitNum },
-      ];
-      
-      const totalPipeline = [
-        {
-          $addFields: {
-            age: {
-              $floor: {
-                $divide: [
-                  { $subtract: [new Date(), "$dateOfBirth"] },
-                  365 * 24 * 60 * 60 * 1000,
-                ],
-              },
-            },
-          },
-        },
-        {
-          $lookup: {
-            from: "positions",
-            localField: "position",
-            foreignField: "_id",
-            as: "positionDetails",
-          },
-        },
-        {
-          $unwind: {
-            path: "$positionDetails",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $match: matchConditions,
-        },
-        {
-          $count: "total",
-        },
-      ];  
-
-      const [players, totalPlayers] = await Promise.all([
-        Player.aggregate(pipeline),
-        Player.aggregate(totalPipeline),
-      ]);
-      
-
-      const total = totalPlayers[0]?.total;
-
-      return res.status(200).json({
-        players,
-        total: total,
-        page: pageNum,
-        perPage: limitNum,
-      });
-    } catch (error) {
-      console.error("error while fetching players:", {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      });
-      res.status(500).json({
-        success: false,
-        message: "Error fetching players",
-        error: error.message,
-        errorType: error.name,
-      });
+      if (position) {
+        matchConditions["positionDetails.position"] =
+          decodeURIComponent(position);
+      }
     }
-  },
+
+    const pipeline = [
+      {
+        $addFields: {
+          age: {
+            $floor: {
+              $divide: [
+                { $subtract: [new Date(), "$dateOfBirth"] },
+                365 * 24 * 60 * 60 * 1000,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          rating: {
+            $reduce: {
+              input: "$ratingHistory",
+              initialValue: 0,
+              in: { $add: ["$value", "$this.newRating"] },
+            },
+          },
+          // Calculate netRating dynamically like Club/Country controllers do
+          netRating: {
+            $sum: {
+              $map: {
+                input: "$ratingHistory",
+                as: "rating",
+                in: {
+                  $let: {
+                    vars: {
+                      daysDiff: {
+                        $floor: {
+                          $divide: [
+                            {
+                              $subtract: [
+                                new Date(), // Current date
+                                "$rating.date"
+                              ]
+                            },
+                            1000 * 60 * 60 * 24 // Convert to days
+                          ]
+                        }
+                      }
+                    },
+                    in: {
+                      $cond: [
+                        { $lt: ["$daysDiff", 0] }, // Future date
+                        0,
+                        {
+                          $cond: [
+                            { $gte: ["$daysDiff", 1461] }, // Older than 4 years
+                            0,
+                            {
+                              $multiply: [
+                                "$rating.newRating",
+                                {
+                                  $divide: [
+                                    { $subtract: [1461, "$daysDiff"] },
+                                    1461
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+      },
+      {
+        $lookup: {
+          from: "clubteams",
+          localField: "currentClub.club",
+          foreignField: "_id",
+          as: "clubDetails",
+        },
+      },
+      { $unwind: { path: "$clubDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "countries",
+          localField: "country",
+          foreignField: "_id",
+          as: "countryDetails",
+        },
+      },
+      { $unwind: { path: "$countryDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "positions",
+          localField: "position",
+          foreignField: "_id",
+          as: "positionDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$positionDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $match: matchConditions,
+      },
+      { $sort: sortOptions },
+      { $skip: (pageNum - 1) * limitNum },
+      { $limit: limitNum },
+    ];
+    
+    const totalPipeline = [
+      {
+        $addFields: {
+          age: {
+            $floor: {
+              $divide: [
+                { $subtract: [new Date(), "$dateOfBirth"] },
+                365 * 24 * 60 * 60 * 1000,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "positions",
+          localField: "position",
+          foreignField: "_id",
+          as: "positionDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$positionDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $match: matchConditions,
+      },
+      {
+        $count: "total",
+      },
+    ];  
+
+    console.log('Running aggregation pipelines...');
+    const [players, totalPlayers] = await Promise.all([
+      Player.aggregate(pipeline),
+      Player.aggregate(totalPipeline),
+    ]);
+    
+    const total = totalPlayers[0]?.total || 0;
+
+    console.log(`Found ${players.length} players, total: ${total}`);
+
+    return res.status(200).json({
+      players,
+      total: total,
+      page: pageNum,
+      perPage: limitNum,
+    });
+  } catch (error) {
+    console.error("Detailed error in fetchAllPlayers:", {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    });
+    
+    res.status(500).json({
+      success: false,
+      message: "Error fetching players",
+      error: error.message,
+      errorType: error.name,
+    });
+  }
+}
 };
