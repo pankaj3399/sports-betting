@@ -16,7 +16,6 @@ const ClubTeamSchema = new mongoose.Schema({
     collection: 'clubteams' // Explicitly set collection name
 });
 
-
-const ClubTeam = mongoose.model('ClubTeam', ClubTeamSchema);
 ClubTeamSchema.index({ "name": 1 });
+const ClubTeam = mongoose.model('ClubTeam', ClubTeamSchema);
 module.exports = ClubTeam;
