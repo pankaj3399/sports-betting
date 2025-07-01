@@ -19,6 +19,6 @@ const nationalTeamSchema = new mongoose.Schema({
     collection: 'nationalteams' 
 });
 
-const NationalTeam = mongoose.model('NationalTeam', nationalTeamSchema);
 nationalTeamSchema.index({ "country": 1, "type": 1 });
+const NationalTeam = mongoose.model('NationalTeam', nationalTeamSchema);
 module.exports = NationalTeam;

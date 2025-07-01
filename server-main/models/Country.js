@@ -15,6 +15,6 @@ const countrySchema = new mongoose.Schema({
     collection: 'countries'
 });
 
-const Country = mongoose.model('Country', countrySchema);
 countrySchema.index({ "country": 1 });
+const Country = mongoose.model('Country', countrySchema);
 module.exports = Country;
